@@ -1,0 +1,32 @@
+{
+  "name": "tuner-sseulmal",
+  "private": true,
+  "version": "0.0.1",
+  "description": "오인페를 연결해서 쓰는 하찮고 귀여운 브라우저 베이스 튜너",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check",
+    "format": "biome check --write"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.9.2",
+    "preact": "^10.24.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@preact/preset-vite": "^2.9.1",
+    "@types/node": "^22.20.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.1",
+    "vitest": "^4.1.9"
+  }
+}
