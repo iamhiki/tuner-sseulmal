@@ -60,6 +60,12 @@ describe("createPitchDetector.detect", () => {
   it("returns no pitch for sub-threshold noise", () => {
     const det = createPitchDetector({ minFreq: 55, maxFreq: 700 });
     const buf = tone(110, 6, 0.001); // below RMS_THRESHOLD
+    const result = det.detect(buf, SAMPLE_RATE);
+    expect(result.freq).toBe(-1);
+    // 튜너쓸말: 레벨 미터용으로 측정한 RMS는 유지한다.
+    expect(result.rms).toBeGreaterThan(0);
+    // 결과 객체는 매번 새로 만들어져 호출자 변경이 다음 결과에 새지 않는다.
+    result.freq = 440;
     expect(det.detect(buf, SAMPLE_RATE).freq).toBe(-1);
   });
 

@@ -53,11 +53,11 @@ const SUBHARMONIC_FLOOR = 1e-4;
 /** ...and stand at least this many times above its local mean power to count. */
 const SUBHARMONIC_PROMINENCE = 12;
 
-const NO_PITCH: PitchResult = {
+const NO_PITCH: Readonly<PitchResult> = Object.freeze({
   freq: -1,
   clarity: 0,
   rms: 0,
-};
+});
 
 /**
  * Create a stateful detector. State is only scratch buffers — the refinement is
@@ -105,7 +105,8 @@ export function createPitchDetector(options: DetectorOptions = {}) {
     let sumSquares = 0;
     for (let i = 0; i < n; i++) sumSquares += buffer[i] * buffer[i];
     const rms = Math.sqrt(sumSquares / n);
-    if (rms < RMS_THRESHOLD) return NO_PITCH;
+    // 튜너쓸말: 임계값 미만이어도 측정한 RMS를 돌려준다 (레벨 미터가 이 값을 쓴다).
+    if (rms < RMS_THRESHOLD) return { ...NO_PITCH, rms };
 
     const seed = yin(buffer, sampleRate, minFreq, maxFreq);
     if (seed.freq <= 0) return { ...NO_PITCH, clarity: seed.clarity, rms };
