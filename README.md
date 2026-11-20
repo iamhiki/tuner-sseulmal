@@ -120,6 +120,7 @@ npm run build   # 타입 체크 + 프로덕션 빌드
 ## 문서
 
 - [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — 상세 기획 요약 (기능 명세, E1 검증 전략, 개발 단계, 리스크, 박자 연습 탭)
+- [`docs/SCHEDULE.md`](docs/SCHEDULE.md) — 개발 일정 (22주, 월별·주별·일일 퀘스트)
 
 ## 라이선스
 
