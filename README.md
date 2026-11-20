@@ -5,7 +5,7 @@
 설치도, 로그인도, 서버도 없습니다. 브라우저에서 페이지를 열고, 내 오인페를 고르고, 줄을 튕기면 끝.
 오디오는 브라우저 안에서만 처리되고 어디에도 전송되지 않습니다.
 
-> 상태: **기획 완료 · 개발 준비 중** (0단계). 아래 로드맵 참고.
+> 상태: **0단계 완료** (프로젝트 세팅 + 엔진 이식). 아래 로드맵 참고.
 
 ---
 
@@ -55,7 +55,7 @@
 
 | 원본에서 재사용 | 튜너쓸말에서 새로 구현 |
 |---|---|
-| `src/lib/pitch.ts`, `fft.ts`, `oneEuro.ts`, `notes.ts` 및 테스트 | 입력 장치 선택(`deviceId`) — 원본은 기본 마이크만 사용 |
+| `src/lib/pitch.ts`, `fft.ts`, `oneEuro.ts`, `notes.ts` 및 테스트 (이식 완료) | 입력 장치 선택(`deviceId`) — 원본은 기본 마이크만 사용 |
 | `usePitch.ts`의 오디오 그래프 구성 아이디어 (하이패스 → 로우패스 → Analyser, 8192 샘플) | 입력 레벨 미터, 장치 분리(`devicechange`) 처리 |
 | | 실제 적용된 `sampleRate`·track settings 표시 |
 | | 캐릭터 UI 전체 |
@@ -78,7 +78,7 @@
 
 ## 로드맵
 
-- [ ] 0. Vite + TS 프로젝트, 엔진 코드 이식, `THIRD_PARTY_NOTICES.md`
+- [x] 0. Vite + Preact + TS 프로젝트, 엔진 코드 이식, `THIRD_PARTY_NOTICES.md`
 - [ ] 1. 입력 장치: 권한, 목록, 선택, 스트림 정리
 - [ ] 2. 입력 레벨 미터, 무신호·과입력 안내
 - [ ] 3. 엔진 E1 실험 (테스트 톤 + 실제 베이스, 장치 2종 이상)
@@ -87,12 +87,13 @@
 - [ ] 6. 장치·OS·브라우저·실패 상황 검증
 - [ ] 7. 캐릭터 디자인 확정, HTTPS 배포 (GitHub Pages / Cloudflare Pages)
 
-## 개발 (0단계 이후)
+## 개발
 
 ```bash
 npm install
 npm run dev     # 개발 서버 (getUserMedia는 localhost 또는 HTTPS에서만 동작)
-npm test        # 단위 테스트
+npm test        # 단위 테스트 (Vitest)
+npm run lint    # 포맷·린트 검사 (Biome)
 npm run build   # 타입 체크 + 프로덕션 빌드
 ```
 
