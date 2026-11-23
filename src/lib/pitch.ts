@@ -42,13 +42,6 @@ const RMS_THRESHOLD = 0.004;
 const YIN_THRESHOLD = 0.2;
 /** Accept the best (global-min) lag even without a clean dip, up to this value. */
 const YIN_FALLBACK = 0.6;
-/**
- * 튜너쓸말: 2배 지연의 YIN 골이 이 비율 이하로 더 깊으면 그쪽을 진짜 주기로 본다.
- * 베이스 저음현 꼬리에서는 기본음이 2배음보다 먼저 줄어 반주기 골이 먼저 임계값을 넘는다.
- */
-const OCTAVE_DIP_RATIO = 0.5;
-/** ...단, 두 골의 차이가 이만큼은 나야 한다 (둘 다 0에 가까운 깨끗한 음은 그대로 둔다). */
-const OCTAVE_DIP_GAP = 0.03;
 /** Most harmonics we try to track. */
 const MAX_HARMONICS = 12;
 /** Half-width (as a fraction of f0) of the search band around each harmonic. */
@@ -164,18 +157,6 @@ export function createPitchDetector(options: DetectorOptions = {}) {
       for (let t = minLag + 1; t <= maxLag; t++) if (yinArr[t] < yinArr[best]) best = t;
       if (yinArr[best] > YIN_FALLBACK) return { freq: -1, clarity: 1 - yinArr[best] };
       tau = best;
-    }
-
-    // 튜너쓸말: 반주기 골을 잡았는지 확인 — 2배 지연 근처 골이 훨씬 깊으면 옥타브를 내린다.
-    for (;;) {
-      const center = 2 * tau;
-      const span = Math.max(2, Math.round(center * 0.03));
-      if (center + span > maxLag) break;
-      let t2 = center - span;
-      for (let t = t2 + 1; t <= center + span; t++) if (yinArr[t] < yinArr[t2]) t2 = t;
-      const d = yinArr[tau];
-      if (yinArr[t2] <= d * OCTAVE_DIP_RATIO && d - yinArr[t2] >= OCTAVE_DIP_GAP) tau = t2;
-      else break;
     }
 
     const refinedLag = parabolicMin(yinArr, tau);
