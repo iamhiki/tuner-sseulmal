@@ -69,6 +69,28 @@ describe("createPitchDetector.detect", () => {
     expect(det.detect(buf, SAMPLE_RATE).freq).toBe(-1);
   });
 
+  it("keeps a decaying bass E1 whose fundamental is weaker than its 2nd harmonic", () => {
+    // 실측(오인페 입력 2, 4번줄 꼬리 -28 dB 이하)을 흉내 낸다: 기본음이 2배음보다
+    // 약 -20 dB 작아 반주기 YIN 골이 임계값 아래로 먼저 내려온다.
+    const f = noteFromName("E1").freq;
+    for (const [a1, a3] of [
+      [0.1, 0.3],
+      [0.08, 0.25],
+      [0.05, 0.2],
+    ]) {
+      const amps = [a1, 1, a3, 0.35, 0.1];
+      const buf = new Float32Array(LEN);
+      for (let i = 0; i < LEN; i++) {
+        let s = 0;
+        for (let h = 0; h < amps.length; h++)
+          s += amps[h] * Math.sin((2 * Math.PI * (h + 1) * f * i) / SAMPLE_RATE + h);
+        buf[i] = 0.05 * s;
+      }
+      const result = createPitchDetector({ minFreq: 28, maxFreq: 450 }).detect(buf, SAMPLE_RATE);
+      expect(Math.abs(centsError(result.freq, f))).toBeLessThan(15);
+    }
+  });
+
   it("does not drop a strong low E down an octave", () => {
     // A clean E2 with a present fundamental must not be reported as E1.
     const det = createPitchDetector({ minFreq: 55, maxFreq: 700 });
