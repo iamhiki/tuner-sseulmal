@@ -4,6 +4,8 @@ import type { Pose } from "../components/Mascot.tsx";
 
 /** 이 센트 안이면 "맞음" (시안: 만세 ±4¢). */
 export const IN_TUNE_CENTS = 4;
+/** 이미 맞음이면 이 센트를 넘어야 빠진다. 경계(±4¢)에 머무는 줄에서 포즈가 깜빡이지 않게. */
+export const IN_TUNE_EXIT_CENTS = 6;
 /** 신호 없음이 이만큼 이어지면 쿨쿨 + 케이블 안내. */
 export const SLEEP_AFTER_MS = 4000;
 
@@ -35,8 +37,14 @@ const SAY: Record<Pose, string> = {
 /**
  * 레벨·음정 상태로 쓸말이 포즈와 안내 문구를 고른다.
  * @param quietMs 레벨이 "신호 없음"으로 이어진 시간
+ * @param wasInTune 직전 화면이 "맞음"이었는지
  */
-export function tunerView(level: LevelState, pitch: PitchReading, quietMs: number): TunerView {
+export function tunerView(
+  level: LevelState,
+  pitch: PitchReading,
+  quietMs: number,
+  wasInTune = false,
+): TunerView {
   const blank = pitch.status !== "ok";
   if (level === "clip") {
     return {
@@ -51,7 +59,7 @@ export function tunerView(level: LevelState, pitch: PitchReading, quietMs: numbe
   }
   if (pitch.status === "ok") {
     const c = pitch.cents;
-    const inTune = Math.abs(c) <= IN_TUNE_CENTS;
+    const inTune = Math.abs(c) <= (wasInTune ? IN_TUNE_EXIT_CENTS : IN_TUNE_CENTS);
     const pose: Pose = inTune ? "intune" : c < 0 ? "flat" : "sharp";
     return {
       pose,

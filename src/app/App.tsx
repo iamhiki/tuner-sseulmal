@@ -38,7 +38,9 @@ import { tunerView } from "./tunerView.ts";
 function Tuner() {
   const p = pitch.value;
   const lv = level.value;
-  const view = tunerView(lv.state, p, quietMs.value);
+  const wasInTune = useRef(false);
+  const view = tunerView(lv.state, p, quietMs.value, wasInTune.current);
+  wasInTune.current = view.pose === "intune";
   // 확정값이 없을 때도 목표 줄은 직전 값(처음엔 E1)을 보여준다.
   const lastString = useRef(0);
   if (p.stringIndex >= 0) lastString.current = p.stringIndex;

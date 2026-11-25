@@ -18,6 +18,12 @@ const none = (status: PitchReading["status"]): PitchReading => ({
 });
 
 describe("tunerView", () => {
+  it("맞음은 ±6¢를 넘어야 빠진다 (경계에서 포즈 깜빡임 방지)", () => {
+    expect(tunerView("good", ok(-5), 0).pose).toBe("flat"); // 들어갈 때는 ±4¢
+    expect(tunerView("good", ok(-5), 0, true).pose).toBe("intune");
+    expect(tunerView("good", ok(-6.5), 0, true).pose).toBe("flat");
+  });
+
   it("±4¢ 안은 만세", () => {
     expect(tunerView("good", ok(1), 0).pose).toBe("intune");
     expect(tunerView("good", ok(-4), 0).pose).toBe("intune");
