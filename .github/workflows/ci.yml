@@ -1,0 +1,25 @@
+# 배포는 Vercel이 맡는다 (main → 본 사이트, PR → 미리보기 주소).
+# 여기서는 PR과 main마다 테스트·린트·빌드만 확인한다 (Vercel은 테스트를 안 돌린다).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build

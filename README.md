@@ -9,7 +9,7 @@
 
 ## 바로 써 보기 (미리보기) 🔗
 
-**<https://iamhiki.github.io/tuner-sseulmal/>**
+**<https://tuner-sseulmal.vercel.app>**
 
 - 노트북에 오인페를 꽂고 베이스를 연결한 뒤 열어요. **크롬 권장** (Safari·Firefox는 아직 확인 전)
 - **시작** → 권한 허용 → 오인페 고르기 → 줄 하나씩 튕기기
@@ -117,8 +117,8 @@
 - [ ] 5. 튜너 UI MVP
   - 🟡 쓸말이 화면·줄 버튼 있음 (PR #12). 줄 고정 중 다른 줄 치면 큰 값 — #18
 - [ ] 6. 장치·OS·브라우저·실패 상황 검증
-- [ ] 7. 캐릭터 디자인 확정, HTTPS 배포 (GitHub Pages / Cloudflare Pages)
-  - 🟡 GitHub Pages 미리보기 배포 (main에 머지될 때마다 자동)
+- [ ] 7. 캐릭터 디자인 확정, HTTPS 배포
+  - 🟡 Vercel 미리보기 배포 (main에 머지되면 자동, PR마다 미리보기 주소)
 
 **히키락스타 (박자 연습 탭)**
 
@@ -139,7 +139,7 @@ npm run build   # 타입 체크 + 프로덕션 빌드
 
 ### 배포
 
-`main`에 머지되면 GitHub Actions가 테스트·빌드 후 GitHub Pages에 올려요 ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). 주소: <https://iamhiki.github.io/tuner-sseulmal/>
+**Vercel**이 배포해요: `main`에 머지되면 <https://tuner-sseulmal.vercel.app>이 바뀌고, PR을 올리면 Vercel 봇이 PR마다 미리보기 주소를 댓글로 달아요. GitHub Actions([`.github/workflows/ci.yml`](.github/workflows/ci.yml))는 PR·main마다 테스트·린트·빌드만 확인해요 (Vercel은 테스트를 안 돌려요).
 
 ### 베이스 없이 화면 보기
 
