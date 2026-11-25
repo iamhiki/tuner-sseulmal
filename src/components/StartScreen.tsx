@@ -1,4 +1,4 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { Pose } from "./Mascot.tsx";
 import { Solo } from "./Solo.tsx";
 
@@ -114,12 +114,18 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
   const go = useRef<HTMLButtonElement>(null);
   const gone = dodges >= NOPE_LABELS.length;
 
+  // 사라지는 말래에 있던 포커스를 쓸래로. 쓸래가 처리 중(disabled)이면 풀릴 때 옮긴다.
+  useEffect(() => {
+    const lost =
+      document.activeElement === nope.current || document.activeElement === document.body;
+    if (gone && !busy && lost) go.current?.focus();
+  }, [gone, busy]);
+
   const dodge = () => {
     const el = nope.current;
     if (!el || gone) return;
     if (dodges + 1 >= NOPE_LABELS.length) {
       setDodges(dodges + 1);
-      go.current?.focus(); // 사라지는 버튼에 있던 포커스를 남은 버튼으로
       return;
     }
     // 원래 자리는 레이아웃 위치(offset)로 잰다. 화면 위치(getBoundingClientRect)는 이동 애니메이션
