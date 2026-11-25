@@ -1,16 +1,25 @@
 import { useRef, useState } from "preact/hooks";
+import type { Pose } from "./Mascot.tsx";
 import { Solo } from "./Solo.tsx";
 
 /** 도망칠 때마다 바뀌는 "말래" 버튼 문구. 다 쓰면 버튼이 펑 사라진다 (절대 안 눌린다). */
 export const NOPE_LABELS = [
   "말래…",
-  "어림없지",
+  "그건 장식이에요",
   "선택권은 없습니다",
   "쓸래밖에 없어요",
   "마지막 경고",
 ];
-/** 말래가 사라진 자리에 남는 손글씨 메모. */
-export const NOPE_GONE_NOTE = "당신은 이 웹을 무조건 써야 합니다 ㅋ";
+/** 말래가 사라지면 쓸말이가 하는 말. */
+export const NOPE_GONE_SAY = "당신은 이 웹을 무조건 써야 합니다 ㅋ";
+
+/** 쫓을수록 격해지는 쓸말이: 갸웃 → 까치발(약 오름) → 부들부들 → 사라지면 만세. */
+export function nopePose(dodges: number): Pose {
+  if (dodges >= NOPE_LABELS.length) return "intune";
+  if (dodges === NOPE_LABELS.length - 1) return "clip";
+  if (dodges === NOPE_LABELS.length - 2) return "sharp";
+  return dodges > 0 ? "unsure" : "idle";
+}
 
 interface Box {
   left: number;
@@ -76,7 +85,7 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
   };
 
   return (
-    <Solo pose={gone ? "intune" : dodges > 0 ? "unsure" : "idle"} title="튜너 쓸래말래">
+    <Solo pose={nopePose(dodges)} title="튜너 쓸래말래" say={gone ? NOPE_GONE_SAY : undefined}>
       <p>
         오인페에 베이스 꽂았으면 시작 눌러줘.
         <br />
@@ -106,11 +115,6 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
           {gone ? "펑!" : NOPE_LABELS[dodges]}
         </button>
       </div>
-      {gone && (
-        <p class="pen-note" role="status">
-          <span>{NOPE_GONE_NOTE}</span>
-        </p>
-      )}
       <p class="tiny">
         로그인도 설치도 없어.
         <br />

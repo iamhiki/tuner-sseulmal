@@ -28,10 +28,9 @@ SOFTWARE.
 
 ## 글꼴
 
-앱에 함께 배포하는 글꼴 (npm `@fontsource/*`로 받아 빌드에 포함). 모두 SIL Open Font License 1.1.
+앱에 함께 배포하는 글꼴 (npm `@fontsource/*`로 받아 빌드에 포함). 둘 다 SIL Open Font License 1.1.
 
 - **Jua** (주아) — Copyright 2018 The BM JUA Project Authors. https://github.com/googlefonts/jua
 - **Fredoka** — Copyright 2016 The Fredoka Project Authors. https://github.com/hafontia/Fredoka-One
-- **Nanum Pen Script** (나눔손글씨 펜) — Copyright 2010 NHN Corporation, designed by Sandoll Communications. https://github.com/google/fonts/tree/main/ofl/nanumpenscript
 
-라이선스 전문: `node_modules/@fontsource/jua/LICENSE`, `node_modules/@fontsource/fredoka/LICENSE`, `node_modules/@fontsource/nanum-pen-script/LICENSE`, https://openfontlicense.org
+라이선스 전문: `node_modules/@fontsource/jua/LICENSE`, `node_modules/@fontsource/fredoka/LICENSE`, https://openfontlicense.org
