@@ -5,16 +5,26 @@ import { Mascot, type Pose } from "./Mascot.tsx";
 export function Solo({
   pose,
   title,
+  say,
   children,
 }: {
   pose: Pose;
   title: string;
+  /** 쓸말이 말풍선 (없으면 안 띄움). */
+  say?: ComponentChildren;
   children: ComponentChildren;
 }) {
   return (
     <section class="box solo">
-      <div class={`anim a-${pose}`}>
-        <Mascot pose={pose} size={220} />
+      <div class="solo-cat">
+        {say && (
+          <div class="bubble" role="status">
+            {say}
+          </div>
+        )}
+        <div class={`anim a-${pose}`}>
+          <Mascot pose={pose} size={280} />
+        </div>
       </div>
       <div>
         <h1>{title}</h1>

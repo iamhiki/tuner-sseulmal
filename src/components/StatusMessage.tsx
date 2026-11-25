@@ -42,7 +42,9 @@ export function UnpluggedScreen({
       <p>
         {deviceLabel || "입력 장치"} 연결이 끊겼어.
         <br />
-        케이블 다시 꽂으면 알아서 이어볼게. 아니면 다른 장치를 골라줘.
+        케이블 다시 꽂으면 <span class="nb">알아서 이어볼게.</span>
+        <br />
+        아니면 다른 장치를 <span class="nb">골라줘.</span>
       </p>
       <div class="btns">
         <button type="button" class="btn" onClick={onReplug} disabled={busy}>
@@ -67,7 +69,9 @@ export function UnsupportedScreen({ onHome }: { onHome: () => void }) {
       <p>
         오디오 입력을 못 받는 브라우저거나, 주소가 https가 아니야.
         <br />
-        Chrome, Edge, Safari, Firefox 최신 버전에서 https 주소로 열어줘.
+        <span class="nb">Chrome, Edge, Safari, Firefox</span> 최신 버전에서
+        <br />
+        https 주소로 열어줘.
       </p>
       <div class="btns">
         <button type="button" class="btn ghost" onClick={onHome}>

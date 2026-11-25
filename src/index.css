@@ -34,7 +34,9 @@
 
 body {
   margin: 0;
-  background: var(--color-bg-cream);
+  /* 배경 낙서: 음표·고양이 발자국·반짝이·물결을 잉크 10%로 (하찮고 귀여운 여백 채우기) */
+  background: var(--color-bg-cream)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320' fill='none' stroke='%232a1e16' stroke-opacity='.1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(46 58) rotate(-12)'%3E%3Cellipse cx='0' cy='22' rx='9' ry='7'/%3E%3Cpath d='M9 22V-12q10 4 13 14'/%3E%3C/g%3E%3Cg transform='translate(226 70) rotate(16)'%3E%3Cellipse cx='0' cy='9' rx='11' ry='9'/%3E%3Ccircle cx='-13' cy='-8' r='4'/%3E%3Ccircle cx='0' cy='-14' r='4'/%3E%3Ccircle cx='13' cy='-8' r='4'/%3E%3C/g%3E%3Cpath d='M150 162v18M141 171h18'/%3E%3Cpath d='M34 246q12-14 24 0t24 0t24 0'/%3E%3Cg transform='translate(238 226) rotate(8)'%3E%3Cellipse cx='0' cy='20' rx='8' ry='6'/%3E%3Cellipse cx='28' cy='15' rx='8' ry='6'/%3E%3Cpath d='M8 20V-8l28-5v28'/%3E%3C/g%3E%3Ccircle cx='296' cy='150' r='4'/%3E%3Ccircle cx='120' cy='296' r='5'/%3E%3C/svg%3E");
   color: var(--color-ink);
   font: 17px / 1.55 var(--font-talk);
   word-break: keep-all;
@@ -60,14 +62,33 @@ li {
 }
 
 .band {
-  max-width: 1280px;
+  --band-pad-x: clamp(16px, 5vw, 64px);
+  /* #app이 세로 flex라 폭을 직접 정한다 (안 그러면 내용만큼 줄어 가운데로 몰린다). 안쪽 폭은 예전처럼 1280px */
+  width: 100%;
+  max-width: calc(1280px + 2 * var(--band-pad-x));
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: clamp(20px, 3vw, 36px) clamp(16px, 5vw, 64px);
+  padding: clamp(20px, 3vw, 36px) var(--band-pad-x);
 }
 
 .main {
   padding-top: 0;
   padding-bottom: 48px;
+}
+
+/* 쓸말이 한 판(시작·장치·오류) 화면은 카드를 화면 세로 가운데에 */
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main:has(> .solo) {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
 }
 
 .box {
@@ -134,6 +155,7 @@ li {
 
 /* ---------- 버튼 ---------- */
 .btns {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -143,6 +165,7 @@ li {
 
 .btn {
   appearance: none;
+  white-space: nowrap; /* 버튼 글자는 한 줄 (도망치며 작아져도 두 줄로 깨지지 않게) */
   font: inherit;
   font-size: 19px;
   color: var(--color-white);
@@ -164,7 +187,46 @@ li {
 .btn.nope {
   position: relative;
   z-index: 1;
-  transition: translate 0.22s cubic-bezier(0.3, 1.4, 0.5, 1);
+  /* 멀리 점프하니 튕기지 않고 부드럽게 감속 (어지럽지 않게) */
+  transition:
+    translate 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    scale 0.3s ease-out;
+}
+
+/* 쓸래가 다 커졌을 때 높이만큼 미리 잡아 둔다: 커지는 동안 카드가 출렁이지 않게 */
+.start-btns {
+  min-height: 96px;
+}
+
+/* 말래가 도망칠수록 쓸래가 커진다 (--grow = 도망친 횟수) */
+.btn.go {
+  font-size: calc(19px + var(--grow, 0) * 2.5px);
+  padding: calc(8px + var(--grow, 0) * 2px) calc(22px + var(--grow, 0) * 6px);
+  transition:
+    font-size 0.25s ease-out,
+    padding 0.25s ease-out;
+}
+
+/* 다섯 번째: 말래는 펑 하고 사라진다 */
+.btn.nope.gone {
+  position: absolute; /* 사라진 자리를 비운다 (줄바꿈된 휴대폰 화면에서 빈 줄이 남지 않게) */
+  pointer-events: none;
+  animation: poof 0.5s ease-out forwards;
+}
+
+@keyframes poof {
+  0% {
+    scale: 0.6;
+  }
+  35% {
+    scale: 1.5;
+    opacity: 1;
+  }
+  100% {
+    scale: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 .btn:active:not(:disabled) {
@@ -189,25 +251,51 @@ input:focus-visible {
 
 /* ---------- 한 판 화면 (시작·장치·오류) ---------- */
 .solo {
-  padding: clamp(24px, 4vw, 52px) clamp(20px, 5vw, 60px);
+  width: 100%;
+  max-width: 980px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 56px) clamp(20px, 5vw, 64px);
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: clamp(18px, 4vw, 56px);
   align-items: center;
 }
 
 .solo .cat {
-  width: 220px;
-  height: 220px;
+  width: 280px;
+  height: 280px;
+}
+
+/* 쓸말이 + (있으면) 말풍선 */
+.solo-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.solo-cat .bubble {
+  white-space: normal;
+  text-wrap: balance;
+  text-align: center;
+  max-width: 240px;
 }
 
 .solo h1 {
-  font-size: clamp(34px, 5vw, 52px);
+  font-size: clamp(36px, 5.4vw, 60px);
 }
 
 .solo p {
   margin: 10px 0 0;
+  font-size: clamp(17px, 1.6vw, 19px);
   max-width: 34em;
+  text-wrap: balance; /* 짧은 안내문: 마지막 줄에 한 단어만 떨어지지 않게 */
+}
+
+/* 끊기면 어색한 덩어리 (브라우저 목록 등) */
+.nb {
+  white-space: nowrap;
 }
 
 .tiny {
@@ -786,6 +874,10 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* 애니메이션이 꺼지면 poof의 마지막 상태가 안 오니 바로 숨긴다 */
+  .btn.nope.gone {
+    visibility: hidden;
+  }
   * {
     /* biome-ignore lint/complexity/noImportantStyles: 움직임 줄이기 설정은 모든 애니메이션보다 앞서야 한다 */
     animation: none !important;
