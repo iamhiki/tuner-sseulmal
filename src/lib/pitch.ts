@@ -29,6 +29,14 @@ export interface PitchResult {
   rms: number;
 }
 
+/** 튜너쓸말: 배음별 가중치와 (배음 주파수÷차수)/기본음 비율. index = 배음 차수, 0은 없음. */
+export interface HarmonicRef {
+  weights: Float32Array;
+  ratios: Float32Array;
+  /** 기준을 잡을 때의 기본음 (Hz). */
+  f0: number;
+}
+
 export interface DetectorOptions {
   /** Lowest fundamental to search for (Hz). */
   minFreq?: number;
@@ -99,8 +107,21 @@ export function createPitchDetector(options: DetectorOptions = {}) {
     mag2 = new Float32Array((m >> 1) + 1);
   }
 
-  function detect(buffer: Float32Array, sampleRate: number): PitchResult {
+  // 튜너쓸말: 마지막 refine()의 배음별 가중치와 "배음 주파수÷차수 ÷ 결과" 비율 (index = 배음 차수, 없으면 0).
+  const weights = new Float32Array(MAX_HARMONICS + 1);
+  const ratios = new Float32Array(MAX_HARMONICS + 1);
+  const perH = new Float32Array(MAX_HARMONICS + 1);
+  let lastF0 = -1;
+
+  /**
+   * @param ref 튜너쓸말: 같은 음의 앞선 프레임에서 잡은 배음 기준. 주면 각 배음을 그때의 비율로
+   *   보정하고 그때의 가중치로 평균 낸다. 배음끼리 높이가 조금씩 다른 줄에서 배음이 사라지는
+   *   순서 때문에 값이 끌려가지 않는다 (PitchPipeline 참고).
+   */
+  function detect(buffer: Float32Array, sampleRate: number, ref?: HarmonicRef | null): PitchResult {
     const n = buffer.length;
+    weights.fill(0);
+    ratios.fill(0);
 
     let sumSquares = 0;
     for (let i = 0; i < n; i++) sumSquares += buffer[i] * buffer[i];
@@ -112,7 +133,7 @@ export function createPitchDetector(options: DetectorOptions = {}) {
     if (seed.freq <= 0) return { ...NO_PITCH, clarity: seed.clarity, rms };
 
     ensureSized(n);
-    const refinedFreq = refine(buffer, sampleRate, seed.freq);
+    const refinedFreq = refine(buffer, sampleRate, seed.freq, ref ?? null);
 
     return {
       // Fall back to the YIN estimate if the spectrum had no usable harmonics.
@@ -168,7 +189,13 @@ export function createPitchDetector(options: DetectorOptions = {}) {
    * compute a precise, A-weighted fundamental from it. Returns the refined
    * fundamental in Hz, or -1 when the spectrum had no usable harmonics.
    */
-  function refine(buffer: Float32Array, sampleRate: number, f0Seed: number): number {
+  function refine(
+    buffer: Float32Array,
+    sampleRate: number,
+    f0Seed: number,
+    ref: HarmonicRef | null,
+  ): number {
+    perH.fill(0);
     const m = fftSize;
     const half = m >> 1;
     const df = sampleRate / m;
@@ -237,9 +264,15 @@ export function createPitchDetector(options: DetectorOptions = {}) {
     }
 
     const tolBins = Math.max(1, Math.round((HARMONIC_TOLERANCE * f0Base) / df));
+    // 튜너쓸말: 이번 프레임이 기준 음의 k배(옥타브 위 오독)로 읽혔으면 배음 h는 기준의 h·k번째다.
+    const k = ref ? Math.round(f0Base / ref.f0) : 0;
+    const refOk = ref !== null && k >= 1 && Math.abs(f0Base / ref.f0 - k) < 0.03 * k;
 
     let sumW = 0;
     let sumWFoverH = 0;
+    // 고정 가중치로 잡힌 배음이 하나도 없으면 원래 방식으로 되돌아간다.
+    let fixedW = 0;
+    let fixedWFoverH = 0;
 
     const nyquist = sampleRate * 0.5;
     for (let h = 1; h <= MAX_HARMONICS; h++) {
@@ -270,13 +303,23 @@ export function createPitchDetector(options: DetectorOptions = {}) {
 
       const mag = Math.sqrt(mag2[kp]);
       const w = aWeight(freqH) * mag;
+      weights[h] = w;
+      perH[h] = freqH / h;
+      const rh = h * k;
+      if (refOk && rh <= MAX_HARMONICS && ref.ratios[rh] > 0) {
+        // 가중치는 지금 세기를 쓴다: 잡을 때 강했어도 지금 사라진 배음(잡음 피크)이 끌지 않게.
+        fixedW += w;
+        fixedWFoverH += (w * (freqH / h)) / ref.ratios[rh];
+      }
       sumW += w;
       sumWFoverH += w * (freqH / h);
     }
 
     if (sumW === 0) return -1;
-
-    return sumWFoverH / sumW;
+    const result = fixedW > 0 ? fixedWFoverH / fixedW : sumWFoverH / sumW;
+    for (let h = 1; h <= MAX_HARMONICS; h++) if (perH[h] > 0) ratios[h] = perH[h] / result;
+    lastF0 = result;
+    return result;
   }
 
   /** Hann-window `len` samples of `buffer` starting at `offset` into re/im. */
@@ -304,7 +347,10 @@ export function createPitchDetector(options: DetectorOptions = {}) {
     return (omega * sampleRate) / (2 * Math.PI);
   }
 
-  return { detect };
+  /** 마지막 detect()의 배음 기준. 내부 버퍼라 보관하려면 복사해야 한다. */
+  const lastHarmonics = (): Readonly<HarmonicRef> => ({ weights, ratios, f0: lastF0 });
+
+  return { detect, lastHarmonics };
 }
 
 /** Half a length, floored — the YIN integration window. */
