@@ -1,17 +1,24 @@
 import { useRef, useState } from "preact/hooks";
 import { Solo } from "./Solo.tsx";
 
-/** 도망칠 때마다 바뀌는 "말래" 버튼 문구. 마지막은 지쳐서 포기한 상태. */
+/** 도망칠 때마다 바뀌는 "말래" 버튼 문구. 끝까지 가면 뒤쪽 문구를 돌려 쓴다 (절대 안 눌린다). */
 export const NOPE_LABELS = [
   "말래…",
   "어딜!",
   "진짜 말래?",
   "한 줄만 튕겨 봐",
   "잡아 봐~",
-  "헉헉… 알겠어",
+  "안 잡히지롱",
+  "쓸래 눌러줘…",
 ];
-/** 이만큼 도망치면 포기하고 눌린다. */
-export const NOPE_MAX_DODGES = NOPE_LABELS.length - 1;
+/** 처음 두 문구 뒤로는 이 위치부터 돌려 쓴다. */
+const NOPE_LOOP_FROM = 2;
+
+export function nopeLabel(dodges: number): string {
+  if (dodges < NOPE_LABELS.length) return NOPE_LABELS[dodges];
+  const loop = NOPE_LABELS.length - NOPE_LOOP_FROM;
+  return NOPE_LABELS[NOPE_LOOP_FROM + ((dodges - NOPE_LOOP_FROM) % loop)];
+}
 
 interface Box {
   left: number;
@@ -45,17 +52,18 @@ export function nextDodge(
   return prev;
 }
 
-/** F-01 시작 (권한 요청 전). "말래"는 몇 번 도망치다 지쳐서 눌려 준다. */
+/**
+ * F-01 시작 (권한 요청 전). "말래"는 절대 안 눌린다: 다가가면 도망치고 문구만 바뀐다.
+ * 이름은 "쓸래말래"지만 목적은 쓰게 하는 것. "쓸래"는 언제든 누를 수 있으니 갇히는 사람은 없다.
+ */
 export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => void }) {
-  const [declined, setDeclined] = useState(false);
   const [dodges, setDodges] = useState(0);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const nope = useRef<HTMLButtonElement>(null);
-  const tired = dodges >= NOPE_MAX_DODGES;
 
   const dodge = () => {
     const el = nope.current;
-    if (!el || tired || declined) return;
+    if (!el) return;
     const r = el.getBoundingClientRect();
     const home = {
       left: r.left - pos.x,
@@ -63,19 +71,12 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
       right: r.right - pos.x,
       bottom: r.bottom - pos.y,
     };
-    const next =
-      dodges + 1 >= NOPE_MAX_DODGES
-        ? { x: 0, y: 0 }
-        : nextDodge(home, innerWidth, innerHeight, pos);
-    setPos(next);
+    setPos(nextDodge(home, innerWidth, innerHeight, pos));
     setDodges(dodges + 1);
   };
 
   return (
-    <Solo
-      pose={declined ? "sleep" : dodges > 0 && !tired ? "unsure" : "idle"}
-      title="튜너 쓸래말래"
-    >
+    <Solo pose={dodges > 0 ? "unsure" : "idle"} title="튜너 쓸래말래">
       <p>
         오인페에 베이스 꽂았으면 시작 눌러줘.
         <br />
@@ -91,20 +92,11 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
           class="btn ghost nope"
           style={{ translate: `${pos.x}px ${pos.y}px` }}
           onPointerEnter={(e) => e.pointerType === "mouse" && dodge()}
-          onClick={(e) => {
-            // 키보드(detail 0)로 누르면 장난치지 않고 바로 눌린다.
-            if (tired || e.detail === 0) setDeclined(true);
-            else dodge();
-          }}
+          onClick={dodge}
         >
-          {NOPE_LABELS[Math.min(dodges, NOPE_MAX_DODGES)]}
+          {nopeLabel(dodges)}
         </button>
       </div>
-      {declined && (
-        <p class="notice" role="status">
-          알겠어, 쿨쿨… 마음 바뀌면 시작 눌러줘.
-        </p>
-      )}
       <p class="tiny">
         로그인도 설치도 없어.
         <br />
