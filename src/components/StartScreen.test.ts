@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NOPE_GONE_SAY, NOPE_LABELS, nextDodge, nopePose } from "./StartScreen.tsx";
+import { NOPE_GONE_SAY, NOPE_LABELS, nextDodge, nopePose, WELCOME_SAYS } from "./StartScreen.tsx";
 
 describe("nextDodge (말래 버튼 도망)", () => {
   const home = { left: 560, top: 300, right: 680, bottom: 352 }; // 120×52 버튼
@@ -16,19 +16,20 @@ describe("nextDodge (말래 버튼 도망)", () => {
     const rand = seeded();
     let pos = { x: 0, y: 0 };
     for (let i = 0; i < 30; i++) {
-      const next = nextDodge(home, 1280, 800, pos, go, rand);
+      const next = nextDodge(home, 1280, 800, pos, [go], rand);
       expect(Math.hypot(next.x - pos.x, next.y - pos.y)).toBeGreaterThanOrEqual(320);
       pos = next;
     }
   });
 
-  it("화면 밖으로 나가지 않고 쓸래 버튼을 가리지 않는다 (휴대폰 폭)", () => {
+  it("화면 밖으로 나가지 않고 쓸래 버튼·글씨·쓸말이를 가리지 않는다 (휴대폰 폭)", () => {
     const phoneHome = { left: 200, top: 500, right: 320, bottom: 552 };
     const phoneGo = { left: 60, top: 500, right: 190, bottom: 552 };
+    const phoneText = { left: 30, top: 120, right: 360, bottom: 480 }; // 쓸말이·제목·안내문
     const rand = seeded();
     let pos = { x: 0, y: 0 };
     for (let i = 0; i < 30; i++) {
-      pos = nextDodge(phoneHome, 390, 844, pos, phoneGo, rand);
+      pos = nextDodge(phoneHome, 390, 844, pos, [phoneGo, phoneText], rand);
       const left = phoneHome.left + pos.x;
       const top = phoneHome.top + pos.y;
       expect(left).toBeGreaterThanOrEqual(12);
@@ -48,15 +49,19 @@ describe("nextDodge (말래 버튼 도망)", () => {
     expect(NOPE_LABELS.length).toBe(5);
     expect(NOPE_LABELS.some((l) => l.includes("알겠어"))).toBe(false);
     expect(NOPE_GONE_SAY.join(" ")).toBe("당신은 이 웹을 무조건 써야 합니다 ㅋ");
+    // 환영 멘트: 여러 개, 말풍선 두 줄에 들어가게 덩어리당 짧게
+    expect(WELCOME_SAYS.length).toBeGreaterThanOrEqual(6);
+    for (const say of WELCOME_SAYS)
+      for (const chunk of say) expect(chunk.length).toBeLessThanOrEqual(14);
   });
 
-  it("쫓을수록 쓸말이가 격해지다가 말래가 사라지면 만세", () => {
+  it("쫓을수록 쓸말이가 약 오르다가 말래가 사라지면 만세 (떠는 포즈 없음)", () => {
     expect([0, 1, 2, 3, 4, 5].map(nopePose)).toEqual([
       "idle",
       "unsure",
       "unsure",
       "sharp",
-      "clip",
+      "sharp",
       "intune",
     ]);
   });

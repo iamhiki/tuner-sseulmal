@@ -23,7 +23,7 @@ export function Solo({
           </div>
         )}
         <div class={`anim a-${pose}`}>
-          <Mascot pose={pose} size={220} />
+          <Mascot pose={pose} size={280} />
         </div>
       </div>
       <div>
