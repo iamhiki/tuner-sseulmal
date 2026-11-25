@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NOPE_LABELS, nextDodge, nopeLabel } from "./StartScreen.tsx";
+import { NOPE_GONE_NOTE, NOPE_LABELS, nextDodge } from "./StartScreen.tsx";
 
 const home = { left: 200, top: 300, right: 300, bottom: 352 };
 
@@ -26,10 +26,9 @@ describe("nextDodge (말래 버튼 도망)", () => {
     }
   });
 
-  it("문구는 끝까지 가도 포기하지 않고 돌아간다", () => {
-    const labels = Array.from({ length: 40 }, (_, i) => nopeLabel(i));
-    expect(labels.every((l) => !l.includes("알겠어"))).toBe(true);
-    expect(labels[0]).toBe(NOPE_LABELS[0]);
-    expect(new Set(labels.slice(20)).size).toBeGreaterThan(1);
+  it("말래 문구에는 항복이 없다 (눌러 주는 문구가 없음)", () => {
+    expect(NOPE_LABELS.length).toBe(5);
+    expect(NOPE_LABELS.some((l) => l.includes("알겠어"))).toBe(false);
+    expect(NOPE_GONE_NOTE).toContain("무조건 써야");
   });
 });

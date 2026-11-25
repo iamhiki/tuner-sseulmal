@@ -24,6 +24,7 @@
   --shadow-control: 3px 4px 0 var(--color-ink);
   --font-talk: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-num: "Fredoka", "Jua", sans-serif;
+  --font-pen: "Nanum Pen Script", "Jua", cursive; /* 손글씨 메모 (낙서처럼 덧붙는 말) */
   color-scheme: light;
 }
 
@@ -164,7 +165,65 @@ li {
 .btn.nope {
   position: relative;
   z-index: 1;
-  transition: translate 0.22s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition:
+    translate 0.22s cubic-bezier(0.3, 1.4, 0.5, 1),
+    scale 0.22s ease-out;
+}
+
+/* 말래가 도망칠수록 쓸래가 커진다 (--grow = 도망친 횟수) */
+.btn.go {
+  font-size: calc(19px + var(--grow, 0) * 2.5px);
+  padding: calc(8px + var(--grow, 0) * 2px) calc(22px + var(--grow, 0) * 6px);
+  transition:
+    font-size 0.25s ease-out,
+    padding 0.25s ease-out;
+}
+
+/* 다섯 번째: 말래는 펑 하고 사라진다 */
+.btn.nope.gone {
+  pointer-events: none;
+  animation: poof 0.5s ease-out forwards;
+}
+
+@keyframes poof {
+  0% {
+    scale: 0.6;
+  }
+  35% {
+    scale: 1.5;
+    opacity: 1;
+  }
+  100% {
+    scale: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* 말래가 사라진 자리의 손글씨 메모 (형광펜 밑줄) */
+.pen-note {
+  margin: 14px 0 0;
+  font-family: var(--font-pen);
+  font-size: 30px;
+  line-height: 1.2;
+  rotate: -2deg;
+  animation: scribble-in 0.4s ease-out 0.25s both;
+}
+
+.pen-note span {
+  background: linear-gradient(
+    transparent 58%,
+    var(--color-accent-soft) 58%,
+    var(--color-accent-soft) 92%,
+    transparent 92%
+  );
+}
+
+@keyframes scribble-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
 }
 
 .btn:active:not(:disabled) {
@@ -786,6 +845,10 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* 애니메이션이 꺼지면 poof의 마지막 상태가 안 오니 바로 숨긴다 */
+  .btn.nope.gone {
+    visibility: hidden;
+  }
   * {
     /* biome-ignore lint/complexity/noImportantStyles: 움직임 줄이기 설정은 모든 애니메이션보다 앞서야 한다 */
     animation: none !important;
