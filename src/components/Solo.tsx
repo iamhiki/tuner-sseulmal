@@ -11,7 +11,7 @@ export function Solo({
   pose: Pose;
   title: string;
   /** 쓸말이 말풍선 (없으면 안 띄움). */
-  say?: string;
+  say?: ComponentChildren;
   children: ComponentChildren;
 }) {
   return (

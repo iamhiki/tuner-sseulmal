@@ -47,7 +47,7 @@ describe("nextDodge (말래 버튼 도망)", () => {
   it("말래 문구에는 항복이 없다 (눌러 주는 문구가 없음)", () => {
     expect(NOPE_LABELS.length).toBe(5);
     expect(NOPE_LABELS.some((l) => l.includes("알겠어"))).toBe(false);
-    expect(NOPE_GONE_SAY).toContain("무조건 써야");
+    expect(NOPE_GONE_SAY.join(" ")).toBe("당신은 이 웹을 무조건 써야 합니다 ㅋ");
   });
 
   it("쫓을수록 쓸말이가 격해지다가 말래가 사라지면 만세", () => {

@@ -10,8 +10,8 @@ export const NOPE_LABELS = [
   "쓸래밖에 없어요",
   "마지막 경고",
 ];
-/** 말래가 사라지면 쓸말이가 하는 말. */
-export const NOPE_GONE_SAY = "당신은 이 웹을 무조건 써야 합니다 ㅋ";
+/** 말래가 사라지면 쓸말이가 하는 말. 뒷부분은 말풍선에서 한 줄로 묶는다. */
+export const NOPE_GONE_SAY = ["당신은 이 웹을", "무조건 써야 합니다 ㅋ"] as const;
 
 /** 쫓을수록 격해지는 쓸말이: 갸웃 → 까치발(약 오름) → 부들부들 → 사라지면 만세. */
 export function nopePose(dodges: number): Pose {
@@ -98,7 +98,17 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
   };
 
   return (
-    <Solo pose={nopePose(dodges)} title="튜너 쓸래말래" say={gone ? NOPE_GONE_SAY : undefined}>
+    <Solo
+      pose={nopePose(dodges)}
+      title="튜너 쓸래말래"
+      say={
+        gone && (
+          <>
+            <span class="nb">{NOPE_GONE_SAY[0]}</span> <span class="nb">{NOPE_GONE_SAY[1]}</span>
+          </>
+        )
+      }
+    >
       <p>
         오인페에 베이스 꽂았으면 <span class="nb">시작 눌러줘.</span>
         <br />
