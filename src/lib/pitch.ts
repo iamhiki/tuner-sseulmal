@@ -37,7 +37,7 @@ export interface DetectorOptions {
 }
 
 /** Minimum signal energy (RMS) required before we trust a pitch reading. */
-const RMS_THRESHOLD = 0.004;
+export const RMS_THRESHOLD = 0.004;
 /** YIN absolute threshold: first dip below this is taken as the period. */
 const YIN_THRESHOLD = 0.2;
 /** Accept the best (global-min) lag even without a clean dip, up to this value. */
