@@ -4,6 +4,8 @@ import type { Pose } from "../components/Mascot.tsx";
 
 /** 이 센트 안이면 "맞음" (시안: 만세 ±4¢). */
 export const IN_TUNE_CENTS = 4;
+/** 이미 맞음이면 이 센트를 넘어야 빠진다. 경계(±4¢)에 머무는 줄에서 포즈가 깜빡이지 않게. */
+export const IN_TUNE_EXIT_CENTS = 6;
 /** 신호 없음이 이만큼 이어지면 쿨쿨 + 케이블 안내. */
 export const SLEEP_AFTER_MS = 4000;
 
@@ -33,10 +35,33 @@ const SAY: Record<Pose, string> = {
 };
 
 /**
+ * "맞음"이었던 줄 번호를 이어 받는다 (-1: 없음). tunerView의 wasInTune에 쓴다.
+ * - 확정값(ok)일 때만 갱신한다: 잠깐 "분석 중"이 끼어도 맞음 기억이 지워지지 않게.
+ * - 줄 번호로 기억한다: 다른 줄로 바뀌면 그 줄은 ±4¢부터 다시 들어와야 한다.
+ * - 소리가 끝나면(silent) 지운다.
+ */
+export function nextInTuneString(
+  prev: number,
+  level: LevelState,
+  pitch: PitchReading,
+  view: TunerView,
+): number {
+  if (pitch.status === "silent") return -1;
+  if (pitch.status !== "ok" || level === "clip") return prev;
+  return view.pose === "intune" ? pitch.stringIndex : -1;
+}
+
+/**
  * 레벨·음정 상태로 쓸말이 포즈와 안내 문구를 고른다.
  * @param quietMs 레벨이 "신호 없음"으로 이어진 시간
+ * @param wasInTune 직전 화면이 "맞음"이었는지
  */
-export function tunerView(level: LevelState, pitch: PitchReading, quietMs: number): TunerView {
+export function tunerView(
+  level: LevelState,
+  pitch: PitchReading,
+  quietMs: number,
+  wasInTune = false,
+): TunerView {
   const blank = pitch.status !== "ok";
   if (level === "clip") {
     return {
@@ -51,7 +76,7 @@ export function tunerView(level: LevelState, pitch: PitchReading, quietMs: numbe
   }
   if (pitch.status === "ok") {
     const c = pitch.cents;
-    const inTune = Math.abs(c) <= IN_TUNE_CENTS;
+    const inTune = Math.abs(c) <= (wasInTune ? IN_TUNE_EXIT_CENTS : IN_TUNE_CENTS);
     const pose: Pose = inTune ? "intune" : c < 0 ? "flat" : "sharp";
     return {
       pose,

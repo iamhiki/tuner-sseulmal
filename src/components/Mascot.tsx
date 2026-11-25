@@ -1,7 +1,7 @@
 /**
  * 쓸말이 v2: 하찮은 낙서 고양이. 꼬리 끝이 줄감개다.
  * 승인된 시안(Figma "Mascot / 쓸말이", 7포즈)의 선을 그대로 옮겼다.
- * idle 기다림 · flat 축 처짐(♭) · sharp 까치발(♯) · intune 만세(±4¢)
+ * idle 기다림 · flat 축 처짐(♭) · sharp 까치발(♯) · intune 만세(±4¢에 들어오면, ±6¢를 넘을 때까지)
  * · sleep 쿨쿨(신호 없음) · clip 귀 막기(과입력) · unsure 갸우뚱(불안정)
  */
 import type { JSX } from "preact";

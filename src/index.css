@@ -398,7 +398,7 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: left 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: left 0.12s ease-out; /* 60fps로 계속 갱신돼서 튕기는 곡선을 쓰면 왔다갔다 떨린다 */
 }
 
 .walker .cat {
@@ -441,7 +441,7 @@ kbd {
   border: 11px solid transparent;
   border-top: 16px solid var(--color-ink);
   border-bottom: 0;
-  transition: left 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: left 0.12s ease-out; /* 60fps로 계속 갱신돼서 튕기는 곡선을 쓰면 왔다갔다 떨린다 */
 }
 
 .scale {

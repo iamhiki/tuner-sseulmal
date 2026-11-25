@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PitchReading } from "../audio/pitchPipeline.ts";
-import { formatCents, rulerPercent, tunerView } from "./tunerView.ts";
+import { formatCents, nextInTuneString, rulerPercent, tunerView } from "./tunerView.ts";
 
 const ok = (cents: number): PitchReading => ({
   status: "ok",
@@ -18,6 +18,12 @@ const none = (status: PitchReading["status"]): PitchReading => ({
 });
 
 describe("tunerView", () => {
+  it("맞음은 ±6¢를 넘어야 빠진다 (경계에서 포즈 깜빡임 방지)", () => {
+    expect(tunerView("good", ok(-5), 0).pose).toBe("flat"); // 들어갈 때는 ±4¢
+    expect(tunerView("good", ok(-5), 0, true).pose).toBe("intune");
+    expect(tunerView("good", ok(-6.5), 0, true).pose).toBe("flat");
+  });
+
   it("±4¢ 안은 만세", () => {
     expect(tunerView("good", ok(1), 0).pose).toBe("intune");
     expect(tunerView("good", ok(-4), 0).pose).toBe("intune");
@@ -56,5 +62,21 @@ describe("formatCents · rulerPercent", () => {
     expect(rulerPercent(0)).toBe(50);
     expect(rulerPercent(-200)).toBe(2);
     expect(rulerPercent(80)).toBe(98);
+  });
+
+  it("맞음 기억은 줄 번호로, 확정값일 때만 바뀌고 소리가 끝나면 지워진다", () => {
+    const at = (cents: number, stringIndex: number): PitchReading => ({
+      ...ok(cents),
+      stringIndex,
+    });
+    const step = (prev: number, p: PitchReading) =>
+      nextInTuneString(prev, "good", p, tunerView("good", p, 0, p.stringIndex === prev));
+    let m = step(-1, at(-3, 1)); // A줄 맞음
+    expect(m).toBe(1);
+    m = step(m, none("listening")); // 잠깐 분석 중 → 기억 유지
+    expect(m).toBe(1);
+    expect(tunerView("good", at(-5, 1), 0, m === 1).pose).toBe("intune"); // 다시 오면 ±6¢ 기준
+    expect(tunerView("good", at(-5, 2), 0, m === 2).pose).toBe("flat"); // 다른 줄은 ±4¢부터
+    expect(step(m, none("silent"))).toBe(-1);
   });
 });
