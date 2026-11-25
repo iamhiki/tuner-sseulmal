@@ -92,4 +92,30 @@ describe("StabilityGate", () => {
     expect(g.state).toBe("idle");
     expect(g.update(D2)).toBe(-1);
   });
+
+  it("hides the upward glide when the string is muted by hand", () => {
+    // 실기 로그(1번줄을 손으로 막을 때): 0 → +2 → +12 → +31 → +45 → +64 → +71¢ 후 무음
+    const g = new StabilityGate();
+    for (let i = 0; i < 30; i++) g.update(G2);
+    for (const f of [98.5, 99.22, 100.35, 100.98, 101.94, 102.3]) expect(g.update(f)).toBe(G2);
+  });
+
+  it("still follows a fast peg turn (5¢ per frame)", () => {
+    const g = new StabilityGate();
+    for (let i = 0; i < 10; i++) g.update(G2);
+    let f = G2;
+    for (let i = 0; i < 20; i++) {
+      f *= 2 ** (5 / 1200);
+      expect(g.update(f)).toBe(f);
+    }
+  });
+
+  it("switches to a new steady note without silence", () => {
+    const g = new StabilityGate();
+    for (let i = 0; i < 10; i++) g.update(G2);
+    const D2 = 73.42;
+    const out = Array.from({ length: 6 }, () => g.update(D2));
+    expect(out.slice(0, 4).every((v) => v === G2)).toBe(true);
+    expect(out[out.length - 1]).toBe(D2);
+  });
 });
