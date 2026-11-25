@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>튜너쓸말 · 장치 테스트</title>
+<!--
+  튜너쓸말 장치 테스트 페이지 (임시 도구, MVP 아님)
+  - 파일 하나로 동작한다. 빌드나 서버 없이 Chrome에서 열면 된다.
+  - 오디오는 브라우저 안에서만 처리되고 어디에도 전송되지 않는다.
+-->
+<style>
+  :root {
+    --bg: #fff8ec; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a5a;
+    --accent: #ff8a5b; --good: #2f9e5b; --warn: #d99a00; --bad: #d64545; --off: #b9ab9b;
+    font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); }
+  main { max-width: 720px; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { margin: 0; font-size: 1.7rem; }
+  .sub { margin: 4px 0 20px; color: var(--muted); }
+  section { background: var(--card); border: 2px solid var(--ink); border-radius: 16px; padding: 16px; margin: 14px 0; }
+  h2 { margin: 0 0 10px; font-size: 1.05rem; }
+  button, select { font: inherit; }
+  button { background: var(--accent); color: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  select { padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; max-width: 100%; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .hint { color: var(--muted); font-size: .9rem; margin: 8px 0 0; }
+  .msg { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fdecea; color: #8a1f1f; display: none; white-space: pre-line; }
+  .msg.show { display: block; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  td { padding: 4px 6px; border-bottom: 1px dashed #e3d6c6; vertical-align: top; }
+  td:first-child { color: var(--muted); width: 42%; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .meter { position: relative; height: 28px; border: 2px solid var(--ink); border-radius: 10px; background: #f3ebe0; overflow: hidden; }
+  .meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--good); transition: width 60ms linear; }
+  .meter .peak { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--ink); left: 0; }
+  .meter .zone { position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgba(0,0,0,.35); }
+  .scale { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 800; color: #fff; background: var(--off); }
+  .badge.none { background: var(--off); } .badge.low { background: var(--warn); }
+  .badge.good { background: var(--good); } .badge.clip { background: var(--bad); }
+  .nums { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; font-size: .92rem; }
+  .ch { display: grid; grid-template-columns: 90px 1fr 64px; gap: 8px; align-items: center; margin-top: 6px; font-size: .88rem; }
+  .ch .meter { height: 14px; border-width: 1.5px; border-radius: 6px; }
+  .big { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .note { font-size: 3.4rem; font-weight: 900; line-height: 1; min-width: 2.4em; }
+  .hz { font-size: 1.6rem; font-weight: 700; }
+  .cents { font-size: 1.2rem; }
+  .octave { margin-top: 8px; padding: 8px 12px; border-radius: 10px; font-weight: 700; display: none; }
+  .octave.show { display: block; }
+  .octave.ok { background: #e3f4ea; color: #1f6b3f; }
+  .octave.bad { background: #fdecea; color: #8a1f1f; }
+  .targets { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .targets span { border: 2px solid var(--ink); border-radius: 10px; padding: 4px 10px; font-weight: 700; }
+  .targets span.on { background: var(--ink); color: var(--bg); }
+  canvas { width: 100%; height: 160px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; display: block; margin-top: 10px; }
+  .stats { margin-top: 8px; font-size: .92rem; }
+  ol { margin: 6px 0 0; padding-left: 20px; } li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>튜너쓸말 · 장치 테스트 🎸</h1>
+  <p class="sub">오인페 신호가 브라우저까지 깨끗하게 들어오는지, E1(41.2Hz)이 제대로 읽히는지 확인하는 임시 도구예요. 오디오는 이 브라우저 밖으로 나가지 않아요.</p>
+
+  <section>
+    <h2>1. 입력 권한</h2>
+    <div class="row">
+      <button id="btnStart">시작 (입력 권한 요청)</button>
+      <button id="btnStop" class="ghost" disabled>정지</button>
+      <button id="btnTone" class="ghost" title="오인페 없이 이 페이지의 음정 검출만 확인합니다">테스트 톤 E1 재생</button>
+    </div>
+    <p class="hint">Chrome에서 여는 걸 추천해요. 허용 창이 뜨면 "허용"을 눌러 주세요.</p>
+    <div id="msg" class="msg"></div>
+  </section>
+
+  <section>
+    <h2>2. 입력 장치</h2>
+    <div class="row">
+      <select id="selDevice" disabled><option>먼저 "시작"을 눌러 주세요</option></select>
+      <button id="btnRefresh" class="ghost" disabled>목록 새로고침</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label for="selChannel">분석할 채널</label>
+      <select id="selChannel" disabled>
+        <option value="mix">자동 (모든 채널 합침)</option>
+        <option value="0">1번 채널만 (L)</option>
+        <option value="1">2번 채널만 (R)</option>
+      </select>
+    </div>
+    <div id="chMeters"></div>
+    <p class="hint">2채널 오인페(M-Track Solo 등)는 베이스가 꽂힌 입력 쪽 채널 막대만 움직여요. 그 채널을 고르면 신호가 반으로 줄지 않아요.</p>
+    <table style="margin-top:10px"><tbody id="tblSettings">
+      <tr><td>상태</td><td>연결 안 됨</td></tr>
+    </tbody></table>
+  </section>
+
+  <section>
+    <h2>3. 입력 레벨</h2>
+    <div class="row"><span id="badge" class="badge none">신호 없음</span><span id="levelHint" class="hint" style="margin:0"></span></div>
+    <div class="meter" style="margin-top:10px">
+      <div class="fill" id="meterFill"></div>
+      <div class="zone" style="left:33.3%"></div>
+      <div class="zone" style="left:83.3%"></div>
+      <div class="zone" style="left:98.3%"></div>
+      <div class="peak" id="meterPeak"></div>
+    </div>
+    <div class="scale"><span>-60 dB</span><span>-40</span><span>-20</span><span>-10</span><span>0 dBFS</span></div>
+    <div class="nums mono">
+      <span>RMS <b id="vRms">–</b> dBFS</span>
+      <span>피크 <b id="vPeak">–</b> dBFS</span>
+      <span>최근 2초 최대 <b id="vPeakHold">–</b> dBFS</span>
+      <span>클리핑 횟수 <b id="vClips">0</b></span>
+    </div>
+    <p class="hint">기준: 세게 쳤을 때 최대 피크가 <b>-18 ~ -3 dBFS</b>면 적정(초록)이에요. -1 dBFS 이상(빨강)이면 오인페 GAIN을 조금 내리세요.</p>
+  </section>
+
+  <section>
+    <h2>4. 대략적인 음정 (E1 옥타브 확인용)</h2>
+    <div class="big">
+      <div class="note" id="vNote">–</div>
+      <div>
+        <div class="hz mono"><span id="vHz">–</span> Hz</div>
+        <div class="cents mono" id="vCents">–</div>
+      </div>
+      <div class="hint" style="margin:0">신뢰도 <span class="mono" id="vConf">–</span></div>
+    </div>
+    <div id="octave" class="octave"></div>
+    <div class="targets" id="targets"></div>
+    <canvas id="cvs" width="1200" height="320"></canvas>
+    <p class="hint">그래프: 최근 8초 동안 읽힌 Hz (로그 눈금). 점선은 E1 41.2 · A1 55 · E2 82.4 · D2 73.4 · G2 98Hz. E1을 쳤는데 점이 82Hz 선에 찍히면 옥타브 오검출이에요.</p>
+    <div class="row" style="margin-top:8px">
+      <button id="btnRecE1" class="ghost" disabled>E1 기록 시작 (5초)</button>
+      <span class="stats mono" id="recResult"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>E1 확인 순서</h2>
+    <ol>
+      <li>오인페 GAIN 노브를 왼쪽 끝(최소)까지 돌리고, 베이스를 INST 입력에 꽂아요.</li>
+      <li>"시작"을 누르고 권한을 허용한 다음, 장치 목록에서 M-Track(오인페)을 골라요.</li>
+      <li>4번 줄(E)을 세게 튕기면서 GAIN을 천천히 올려요. 배지가 <b>적정</b>이 되고, 세게 쳐도 <b>클리핑</b>이 안 뜨는 곳에서 멈춰요.</li>
+      <li>"E1 기록 시작"을 누르고 4번 줄을 한 번 튕겨 길게 울려요. 결과가 41Hz 근처면 성공, 82Hz 근처면 옥타브 오검출이에요.</li>
+      <li>장치 표의 샘플레이트와 결과 줄을 복사해서 알려 주세요.</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------- 상수 ----------
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const TARGETS = [ { name: "E1", hz: 41.2034 }, { name: "A1", hz: 55.0 }, { name: "D2", hz: 73.4162 }, { name: "G2", hz: 97.9989 } ];
+const GUIDES = [41.2034, 55.0, 73.4162, 82.4069, 97.9989];
+const MIN_HZ = 30, MAX_HZ = 420;          // 베이스 기본음 범위
+const DECIM = 4;                          // 분석용 다운샘플 배수 (48k -> 12k)
+const LEVEL = { none: -60, goodPeak: -18, clip: -1 }; // dBFS 기준 (적정: 피크 -18 ~ -1)
+const STORAGE_KEY = "tuner-sseulmal.deviceTest.deviceId";
+
+const $ = (id) => document.getElementById(id);
+const db = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity);
+const fmtDb = (v) => (Number.isFinite(v) ? v.toFixed(1) : "-∞");
+
+// ---------- 음정 검출: YIN (옥타브 오검출에 강한 방식) ----------
+// buf: 다운샘플된 신호, sr: 그 샘플레이트. 반환: { hz, conf } 또는 null
+function yin(buf, sr, minHz, maxHz, threshold) {
+  const tauMin = Math.max(2, Math.floor(sr / maxHz));
+  const tauMax = Math.min(Math.floor(sr / minHz), Math.floor(buf.length / 2));
+  const W = buf.length - tauMax;
+  const d = new Float32Array(tauMax + 1);
+  for (let tau = 1; tau <= tauMax; tau++) {
+    let s = 0;
+    for (let i = 0; i < W; i++) { const x = buf[i] - buf[i + tau]; s += x * x; }
+    d[tau] = s;
+  }
+  // 누적 평균 정규화 차이 함수 (CMNDF)
+  const c = new Float32Array(tauMax + 1);
+  c[0] = 1; let run = 0;
+  for (let tau = 1; tau <= tauMax; tau++) { run += d[tau]; c[tau] = run > 0 ? (d[tau] * tau) / run : 1; }
+  // 임계값 아래로 처음 내려가는 골 (가장 짧은 주기 = 기본음 후보)
+  let tau = -1;
+  for (let t = tauMin; t <= tauMax; t++) {
+    if (c[t] < threshold) {
+      while (t + 1 <= tauMax && c[t + 1] < c[t]) t++;
+      tau = t; break;
+    }
+  }
+  if (tau < 0) { // 임계값을 못 넘으면 전체 최소값 사용 (신뢰도 낮음)
+    let best = tauMin;
+    for (let t = tauMin; t <= tauMax; t++) if (c[t] < c[best]) best = t;
+    tau = best;
+  }
+  // 포물선 보간으로 소수점 주기
+  let betterTau = tau;
+  if (tau > 1 && tau < tauMax) {
+    const a = c[tau - 1], b = c[tau], g = c[tau + 1];
+    const den = a + g - 2 * b;
+    if (den !== 0) betterTau = tau + (a - g) / (2 * den);
+  }
+  return { hz: sr / betterTau, conf: Math.max(0, 1 - c[tau]) };
+}
+
+function noteInfo(hz) {
+  const midi = 69 + 12 * Math.log2(hz / 440);
+  const n = Math.round(midi);
+  const name = NOTE_NAMES[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1);
+  return { name, cents: (midi - n) * 100 };
+}
+
+// ---------- 상태 ----------
+let ctx = null, stream = null, source = null, toneNodes = null;
+let splitter = null, merger = null, chAnalysers = [], rawAnalyser = null, lpAnalyser = null, lowpass = null, highpass = null;
+let rafId = 0, lastPitchAt = 0, peakHold = { v: -Infinity, t: 0 }, clipCount = 0, lastClipAt = 0;
+const history = []; // { t, hz, conf }
+let recording = null;
+let rawBuf, lpBuf, decBuf, chBuf;
+
+function showMsg(text) { const m = $("msg"); m.textContent = text || ""; m.classList.toggle("show", !!text); }
+
+function ensureCtx() {
+  if (!ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) throw new Error("이 브라우저는 Web Audio를 지원하지 않아요. Chrome으로 열어 주세요.");
+    ctx = new AC({ latencyHint: "interactive" });
+  }
+  return ctx;
+}
+
+// 공통 분석 그래프: 입력 -> (채널 선택) -> raw 분석기 / 하이패스 -> 로우패스 -> 음정 분석기
+function buildGraph(node, channelCount) {
+  teardownGraph();
+  // 입력이 바뀌면 이전 기록은 지운다
+  history.length = 0; clipCount = 0; lastClipAt = 0; peakHold = { v: -Infinity, t: 0 };
+  cancelRecording();
+  const c = ctx;
+  splitter = c.createChannelSplitter(Math.max(1, channelCount));
+  node.connect(splitter);
+  chAnalysers = [];
+  for (let i = 0; i < Math.max(1, channelCount); i++) {
+    const a = c.createAnalyser(); a.fftSize = 2048; splitter.connect(a, i); chAnalysers.push(a);
+  }
+  merger = c.createGain(); merger.channelCount = 1; merger.channelCountMode = "explicit"; merger.channelInterpretation = "speakers";
+  rewireChannel(node);
+  rawAnalyser = c.createAnalyser(); rawAnalyser.fftSize = 2048;
+  highpass = c.createBiquadFilter(); highpass.type = "highpass"; highpass.frequency.value = 25; highpass.Q.value = 0.707;
+  lowpass = c.createBiquadFilter(); lowpass.type = "lowpass"; lowpass.frequency.value = 900; lowpass.Q.value = 0.707;
+  lpAnalyser = c.createAnalyser(); lpAnalyser.fftSize = 8192;
+  merger.connect(rawAnalyser);
+  merger.connect(highpass); highpass.connect(lowpass); lowpass.connect(lpAnalyser);
+  rawBuf = new Float32Array(rawAnalyser.fftSize);
+  lpBuf = new Float32Array(lpAnalyser.fftSize);
+  decBuf = new Float32Array(Math.floor(lpAnalyser.fftSize / DECIM));
+  chBuf = new Float32Array(2048);
+  renderChannelMeters(channelCount);
+  if (!rafId) loop();
+}
+
+let currentInputNode = null;
+function rewireChannel(node) {
+  currentInputNode = node || currentInputNode;
+  if (!splitter || !merger) return;
+  try { splitter.disconnect(merger); } catch (e) {}
+  try { currentInputNode.disconnect(merger); } catch (e) {}
+  const v = $("selChannel").value;
+  if (v === "mix" || chAnalysers.length < 2) {
+    // 모든 채널을 평균해 모노로 (speakers 다운믹스)
+    currentInputNode.connect(merger);
+  } else {
+    splitter.connect(merger, Math.min(Number(v), chAnalysers.length - 1));
+  }
+}
+
+function teardownGraph() {
+  for (const n of [splitter, merger, rawAnalyser, highpass, lowpass, lpAnalyser, ...chAnalysers]) { try { n && n.disconnect(); } catch (e) {} }
+  if (currentInputNode) { try { currentInputNode.disconnect(); } catch (e) {} }
+  splitter = merger = rawAnalyser = highpass = lowpass = lpAnalyser = null; chAnalysers = []; currentInputNode = null;
+  cancelRecording();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+}
+
+// 정지 상태로 화면 초기화 (멈춘 값이 실제 입력처럼 보이지 않게)
+function resetDisplay() {
+  history.length = 0; clipCount = 0; lastClipAt = 0; peakHold = { v: -Infinity, t: 0 };
+  $("meterFill").style.width = "0%"; $("meterPeak").style.left = "0";
+  for (const id of ["vRms", "vPeak", "vPeakHold", "vNote", "vHz", "vCents", "vConf"]) $(id).textContent = "–";
+  $("vClips").textContent = "0";
+  const b = $("badge"); b.className = "badge none"; b.textContent = "정지됨"; $("levelHint").textContent = "";
+  $("octave").className = "octave"; $("chMeters").innerHTML = "";
+  renderTargets(null); drawHistory(performance.now());
+}
+
+function setCaptureUi(on) {
+  $("btnStop").disabled = !on; $("btnRefresh").disabled = !on; $("btnRecE1").disabled = !on;
+  $("btnStart").textContent = on ? "다시 연결" : "시작 (입력 권한 요청)";
+}
+
+// 완전 정지: 진행 중인 장치 열기 요청도 무효화
+function stopAll() {
+  openSeq++;
+  stopTone(); stopStream(); teardownGraph(); renderSettings(null); resetDisplay(); setCaptureUi(false);
+}
+
+function stopStream() {
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  if (source) { try { source.disconnect(); } catch (e) {} source = null; }
+}
+
+function stopTone() {
+  if (toneNodes) { toneNodes.forEach((n) => { try { n.stop && n.stop(); n.disconnect(); } catch (e) {} }); toneNodes = null; $("btnTone").textContent = "테스트 톤 E1 재생"; }
+}
+
+// ---------- 장치 ----------
+let listSeq = 0;
+async function listDevices() {
+  const my = ++listSeq;
+  let all;
+  try { all = await navigator.mediaDevices.enumerateDevices(); }
+  catch (e) { showMsg(`장치 목록을 불러오지 못했어요: ${e.name || ""} ${e.message || e}`); return null; }
+  if (my !== listSeq) return null; // 더 최신 새로고침이 있으면 버림
+  const inputs = all.filter((d) => d.kind === "audioinput");
+  const sel = $("selDevice");
+  const current = sel.value || localStorage.getItem(STORAGE_KEY) || "";
+  sel.innerHTML = "";
+  inputs.forEach((d, i) => {
+    const o = document.createElement("option");
+    o.value = d.deviceId;
+    o.textContent = (d.label || `이름 없는 입력 ${i + 1} (권한 허용 후 보여요)`) + (d.deviceId === "default" ? "" : "");
+    sel.appendChild(o);
+  });
+  if (!inputs.length) {
+    const o = document.createElement("option"); o.textContent = "입력 장치가 없어요"; sel.appendChild(o); sel.disabled = true; return inputs;
+  }
+  sel.disabled = false;
+  if (inputs.some((d) => d.deviceId === current)) sel.value = current;
+  return inputs;
+}
+
+let openSeq = 0;
+async function openDevice(deviceId) {
+  const my = ++openSeq;
+  const c = ensureCtx();
+  if (c.state === "suspended") await c.resume();
+  const audio = {
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+    channelCount: { ideal: 2 },
+  };
+  if (deviceId) audio.deviceId = { exact: deviceId };
+  // 새 장치를 먼저 연 다음 바꾼다 (실패하면 기존 입력이 그대로 유지됨)
+  let next;
+  try {
+    next = await navigator.mediaDevices.getUserMedia({ audio });
+  } catch (e) {
+    if (e.name === "OverconstrainedError" && deviceId) {
+      localStorage.removeItem(STORAGE_KEY);
+      next = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    } else throw e;
+  }
+  if (my !== openSeq) { next.getTracks().forEach((t) => t.stop()); return; } // 더 최신 요청이나 정지가 있었음
+  stopTone(); stopStream();
+  stream = next;
+  const track = stream.getAudioTracks()[0];
+  track.addEventListener("ended", () => {
+    if (!stream || stream.getAudioTracks()[0] !== track) return; // 이미 다른 입력으로 바뀜
+    showMsg("장치 연결이 끊겼어요. 케이블과 USB를 확인하고 목록에서 다시 골라 주세요."); renderSettings(null);
+  });
+  source = c.createMediaStreamSource(stream);
+  const s = track.getSettings ? track.getSettings() : {};
+  const chs = Math.max(1, Math.min(2, s.channelCount || source.channelCount || 1));
+  buildGraph(source, chs);
+  const used = s.deviceId || deviceId;
+  if (used) localStorage.setItem(STORAGE_KEY, used);
+  await listDevices();
+  if (used && [...$("selDevice").options].some((o) => o.value === used)) $("selDevice").value = used;
+  renderSettings(track);
+  setCaptureUi(true);
+  showMsg("");
+}
+
+function renderSettings(track) {
+  const tb = $("tblSettings");
+  if (!track) { tb.innerHTML = "<tr><td>상태</td><td>연결 안 됨</td></tr>"; return; }
+  const s = track.getSettings ? track.getSettings() : {};
+  const yesno = (v) => (v === undefined ? "알 수 없음" : v ? "켜짐 ⚠️" : "꺼짐 ✅");
+  const rows = [
+    ["장치 이름", track.label || "(이름 없음)"],
+    ["AudioContext 샘플레이트", ctx ? `${ctx.sampleRate} Hz` : "–"],
+    ["트랙 샘플레이트", s.sampleRate ? `${s.sampleRate} Hz` : "알 수 없음 (브라우저가 알려주지 않음)"],
+    ["채널 수", s.channelCount ?? "알 수 없음"],
+    ["에코 제거 (echoCancellation)", yesno(s.echoCancellation)],
+    ["잡음 제거 (noiseSuppression)", yesno(s.noiseSuppression)],
+    ["자동 게인 (autoGainControl)", yesno(s.autoGainControl)],
+    ["지연 (latency)", s.latency !== undefined ? `${(s.latency * 1000).toFixed(1)} ms` : "알 수 없음"],
+    ["출력 지연 (baseLatency)", ctx && ctx.baseLatency !== undefined ? `${(ctx.baseLatency * 1000).toFixed(1)} ms` : "알 수 없음"],
+    ["deviceId", `${(s.deviceId || "").slice(0, 24)}…`, "mono"],
+  ];
+  // 장치 이름 등은 외부 값이므로 항상 이스케이프한다
+  tb.innerHTML = rows.map(([k, v, cls]) => `<tr><td>${escapeHtml(k)}</td><td${cls ? ` class="${cls}" style="font-size:.75rem;word-break:break-all"` : ""}>${escapeHtml(String(v))}</td></tr>`).join("");
+}
+function escapeHtml(s) { return s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChannelMeters(n) {
+  const box = $("chMeters");
+  $("selChannel").disabled = n < 2;
+  if (n < 2) { box.innerHTML = '<p class="hint">이 장치는 1채널로 들어오고 있어요.</p>'; $("selChannel").value = "mix"; return; }
+  box.innerHTML = Array.from({ length: n }, (_, i) =>
+    `<div class="ch"><span>${i + 1}번 채널${i === 0 ? " (L)" : " (R)"}</span><div class="meter"><div class="fill" id="chFill${i}"></div></div><span class="mono" id="chDb${i}">–</span></div>`).join("");
+}
+
+// ---------- 테스트 톤 ----------
+function playTone() {
+  if (toneNodes) { stopAll(); return; }
+  openSeq++; stopStream();
+  const c = ensureCtx(); c.resume();
+  // 실제 베이스처럼 2·3배음이 기본음보다 큰 E1 신호 (옥타브 오검출을 일부러 유도)
+  const out = c.createGain(); out.gain.value = 0.35;
+  const parts = [[1, 0.25], [2, 0.45], [3, 0.3], [4, 0.15], [5, 0.08]];
+  const oscs = parts.map(([k, g]) => {
+    const o = c.createOscillator(); o.frequency.value = 41.2034 * k;
+    const gn = c.createGain(); gn.gain.value = g; o.connect(gn); gn.connect(out); o.start(); return o;
+  });
+  const mono = c.createGain(); out.connect(mono);
+  buildGraph(mono, 1);
+  toneNodes = [...oscs, out, mono];
+  $("btnTone").textContent = "테스트 톤 정지";
+  $("btnStop").disabled = false;
+  renderSettings(null);
+  $("tblSettings").innerHTML = `<tr><td>상태</td><td>테스트 톤 (스피커로는 안 나와요). 41.2Hz 근처가 나오면 페이지 자체는 정상이에요.</td></tr><tr><td>AudioContext 샘플레이트</td><td>${c.sampleRate} Hz</td></tr>`;
+  $("btnRecE1").disabled = false;
+}
+
+// ---------- 메인 루프 ----------
+function loop() {
+  if (!rawAnalyser) { rafId = 0; return; }
+  rafId = requestAnimationFrame(loop);
+  const now = performance.now();
+
+  // 채널별 레벨
+  chAnalysers.forEach((a, i) => {
+    a.getFloatTimeDomainData(chBuf);
+    let s = 0; for (let k = 0; k < chBuf.length; k++) s += chBuf[k] * chBuf[k];
+    const r = db(Math.sqrt(s / chBuf.length));
+    const f = $("chFill" + i), t = $("chDb" + i);
+    if (f) f.style.width = pct(r) + "%";
+    if (t) t.textContent = fmtDb(r);
+  });
+
+  // 전체 레벨 (필터 전 원신호)
+  rawAnalyser.getFloatTimeDomainData(rawBuf);
+  let sum = 0, pk = 0;
+  for (let i = 0; i < rawBuf.length; i++) { const v = rawBuf[i]; sum += v * v; const a = Math.abs(v); if (a > pk) pk = a; }
+  const rmsDb = db(Math.sqrt(sum / rawBuf.length)), pkDb = db(pk);
+  if (pkDb > peakHold.v || now - peakHold.t > 2000) peakHold = { v: pkDb, t: now };
+  if (pkDb >= LEVEL.clip && now - lastClipAt > 300) { clipCount++; lastClipAt = now; }
+  renderLevel(rmsDb, pkDb, now);
+
+  // 음정 (약 15회/초)
+  if (now - lastPitchAt > 66) {
+    lastPitchAt = now;
+    detectPitch(rmsDb, now);
+  }
+  drawHistory(now);
+}
+
+function pct(dbv) { return Math.max(0, Math.min(100, ((dbv + 60) / 60) * 100)); }
+
+function renderLevel(rmsDb, pkDb, now) {
+  $("meterFill").style.width = pct(rmsDb) + "%";
+  $("meterPeak").style.left = `calc(${pct(peakHold.v)}% - 3px)`;
+  $("vRms").textContent = fmtDb(rmsDb); $("vPeak").textContent = fmtDb(pkDb);
+  $("vPeakHold").textContent = fmtDb(peakHold.v); $("vClips").textContent = clipCount;
+  let state, label, hint;
+  if (now - lastClipAt < 1500 && lastClipAt) { state = "clip"; label = "클리핑"; hint = "소리가 잘리고 있어요. 오인페 GAIN을 조금 내려 주세요."; }
+  else if (rmsDb < LEVEL.none && peakHold.v < LEVEL.none + 6) { state = "none"; label = "신호 없음"; hint = "케이블, INST 입력, 장치 선택, GAIN을 확인해 주세요."; }
+  else if (peakHold.v < LEVEL.goodPeak) { state = "low"; label = "너무 작음"; hint = "신호가 약해요. 세게 쳤을 때 피크가 -18 dBFS를 넘도록 GAIN을 조금 올려 주세요."; }
+  else { state = "good"; label = "적정"; hint = "좋아요. 세게 쳐도 빨강이 안 뜨면 그대로 두세요."; }
+  const b = $("badge"); b.className = "badge " + state; b.textContent = label;
+  $("levelHint").textContent = hint;
+  $("meterFill").style.background = state === "clip" ? "var(--bad)" : state === "low" ? "var(--warn)" : state === "none" ? "var(--off)" : "var(--good)";
+}
+
+function detectPitch(rmsDb, now) {
+  lpAnalyser.getFloatTimeDomainData(lpBuf);
+  for (let i = 0; i < decBuf.length; i++) {
+    let s = 0; for (let k = 0; k < DECIM; k++) s += lpBuf[i * DECIM + k]; decBuf[i] = s / DECIM;
+  }
+  const sr = ctx.sampleRate / DECIM;
+  let r = null;
+  if (rmsDb > LEVEL.none + 5) r = yin(decBuf, sr, MIN_HZ, MAX_HZ, 0.15);
+  const ok = r && r.conf > 0.8 && r.hz >= MIN_HZ && r.hz <= MAX_HZ;
+  if (ok) {
+    history.push({ t: now, hz: r.hz, conf: r.conf });
+    if (recording) recording.vals.push(r.hz);
+    const n = noteInfo(r.hz);
+    $("vNote").textContent = n.name;
+    $("vHz").textContent = r.hz.toFixed(2);
+    $("vCents").textContent = `${n.cents >= 0 ? "+" : ""}${n.cents.toFixed(0)} cents`;
+    $("vConf").textContent = r.conf.toFixed(2);
+    renderTargets(r.hz);
+    renderOctave(r.hz);
+  } else {
+    $("vConf").textContent = r ? r.conf.toFixed(2) + " (불안정)" : "–";
+    if (!history.length || now - history[history.length - 1].t > 600) {
+      $("vNote").textContent = "–"; $("vHz").textContent = "–"; $("vCents").textContent = rmsDb > LEVEL.none ? "분석 중…" : "신호 없음";
+      renderTargets(null); $("octave").className = "octave";
+    }
+  }
+  while (history.length && now - history[0].t > 8000) history.shift();
+  if (recording && now - recording.start > 5000) finishRecording();
+}
+
+function renderTargets(hz) {
+  let best = null, bestDist = Infinity;
+  if (hz) for (const t of TARGETS) { const d = Math.abs(1200 * Math.log2(hz / t.hz)); if (d < bestDist) { bestDist = d; best = t.name; } }
+  $("targets").innerHTML = TARGETS.map((t) => `<span class="${best === t.name && bestDist < 150 ? "on" : ""}">${t.name} ${t.hz.toFixed(1)}</span>`).join("");
+}
+
+function renderOctave(hz) {
+  const el = $("octave");
+  const c1 = 1200 * Math.log2(hz / 41.2034), c2 = 1200 * Math.log2(hz / 82.4069);
+  if (Math.abs(c1) < 100) { el.className = "octave show ok"; el.textContent = `E1(41.2Hz)로 읽혔어요. 옥타브 정상 (${c1 >= 0 ? "+" : ""}${c1.toFixed(0)} cents)`; }
+  else if (Math.abs(c2) < 100) { el.className = "octave show bad"; el.textContent = "E2(82.4Hz)로 읽혔어요. 4번 줄 개방현을 쳤다면 한 옥타브 위로 잘못 읽힌 거예요."; }
+  else el.className = "octave";
+}
+
+function drawHistory(now) {
+  const cv = $("cvs"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  const lo = Math.log2(30), hi = Math.log2(130);
+  const y = (hz) => H - ((Math.log2(hz) - lo) / (hi - lo)) * H;
+  g.font = "22px system-ui"; g.setLineDash([8, 8]); g.lineWidth = 2;
+  const labels = { 41.2034: "E1 41.2", 55: "A1 55", 73.4162: "D2 73.4", 82.4069: "E2 82.4", 97.9989: "G2 98" };
+  for (const hz of GUIDES) {
+    const yy = y(hz);
+    g.strokeStyle = hz === 82.4069 ? "#e6a0a0" : "#cdbba6";
+    g.beginPath(); g.moveTo(0, yy); g.lineTo(W, yy); g.stroke();
+    g.fillStyle = hz === 82.4069 ? "#c25555" : "#8f7d69"; g.fillText(labels[hz], 8, yy - 6);
+  }
+  g.setLineDash([]);
+  for (const p of history) {
+    if (p.hz < 30 || p.hz > 130) continue;
+    const x = W - ((now - p.t) / 8000) * W;
+    const near = (f) => Math.abs(1200 * Math.log2(p.hz / f)) < 100;
+    g.fillStyle = near(41.2034) ? "#2f9e5b" : near(82.4069) ? "#d64545" : "#ff8a5b";
+    g.beginPath(); g.arc(x, y(p.hz), 6, 0, Math.PI * 2); g.fill();
+  }
+}
+
+// ---------- E1 기록 ----------
+function startRecording() {
+  recording = { start: performance.now(), vals: [] };
+  $("btnRecE1").disabled = true; $("recResult").textContent = "기록 중… 4번 줄을 튕겨 주세요";
+}
+function cancelRecording() {
+  if (!recording) return;
+  recording = null;
+  $("btnRecE1").disabled = !rawAnalyser && !stream;
+  $("recResult").textContent = "입력이 바뀌거나 멈춰서 기록을 취소했어요.";
+}
+function finishRecording() {
+  const v = recording.vals.slice().sort((a, b) => a - b); recording = null;
+  $("btnRecE1").disabled = false;
+  if (!v.length) { $("recResult").textContent = "읽힌 값이 없어요. 레벨이 '적정'인지 확인하고 다시 해 주세요."; return; }
+  const mid = Math.floor(v.length / 2);
+  const med = v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+  const e1 = v.filter((x) => Math.abs(1200 * Math.log2(x / 41.2034)) < 100).length;
+  const e2 = v.filter((x) => Math.abs(1200 * Math.log2(x / 82.4069)) < 100).length;
+  const inE1 = v.filter((x) => Math.abs(1200 * Math.log2(x / 41.2034)) < 100);
+  const spread = inE1.length > 1 ? 1200 * Math.log2(inE1[inE1.length - 1] / inE1[0]) : 0;
+  const sr = ctx ? ctx.sampleRate : "?";
+  $("recResult").textContent =
+    `중앙값 ${med.toFixed(2)}Hz · E1로 읽힘 ${e1}/${v.length} · E2로 읽힘 ${e2}/${v.length} · E1 흔들림 ${spread.toFixed(0)}cents · ${sr}Hz`;
+}
+
+// ---------- 이벤트 ----------
+$("btnStart").addEventListener("click", async () => {
+  showMsg("");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showMsg("이 브라우저(또는 이 주소)에서는 오디오 입력을 쓸 수 없어요.\nChrome으로 열고, 주소가 https:// 또는 localhost 또는 파일(file://)인지 확인해 주세요."); return;
+  }
+  try {
+    await openDevice(localStorage.getItem(STORAGE_KEY) || undefined);
+  } catch (e) {
+    if (e.name === "NotAllowedError" || e.name === "SecurityError") {
+      showMsg("입력 권한이 거부됐어요.\n주소창 왼쪽 자물쇠(또는 사이트 정보) 아이콘 > 마이크 > 허용으로 바꾼 뒤 새로고침해 주세요.\nMac이면 시스템 설정 > 개인정보 보호 및 보안 > 마이크에서 Chrome도 켜져 있어야 해요.");
+    } else if (e.name === "NotFoundError") {
+      showMsg("입력 장치를 찾지 못했어요. 오인페 USB가 꽂혀 있는지 확인해 주세요.");
+    } else if (e.name === "NotReadableError") {
+      showMsg("장치를 열 수 없어요. 다른 프로그램(DAW, 줌 등)이 오인페를 독점하고 있는지 확인해 주세요.");
+    } else {
+      showMsg(`연결 실패: ${e.name || ""} ${e.message || e}`);
+    }
+  }
+});
+$("btnStop").addEventListener("click", stopAll);
+$("btnTone").addEventListener("click", playTone);
+$("btnRefresh").addEventListener("click", listDevices);
+$("selDevice").addEventListener("change", (e) => openDevice(e.target.value).catch((err) => showMsg(`장치 전환 실패: ${err.name} ${err.message}`)));
+$("selChannel").addEventListener("change", () => rewireChannel());
+$("btnRecE1").addEventListener("click", startRecording);
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener("devicechange", async () => {
+    if (!$("selDevice").disabled || stream) {
+      const inputs = await listDevices();
+      const cur = stream && stream.getAudioTracks()[0];
+      if (cur && cur.readyState === "ended") showMsg("사용하던 장치가 분리됐어요. 다시 꽂고 목록에서 골라 주세요.");
+      else if (inputs && inputs.length) showMsg("");
+    }
+  });
+}
+renderTargets(null);
+drawHistory(performance.now());
+
+// 테스트용 노출 (Node 테스트에서 사용)
+if (typeof window !== "undefined") window.__deviceTest = { yin, noteInfo };
+</script>
+</body>
+</html>

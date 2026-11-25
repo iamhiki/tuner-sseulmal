@@ -117,6 +117,10 @@ npm run lint    # 포맷·린트 검사 (Biome)
 npm run build   # 타입 체크 + 프로덕션 빌드
 ```
 
+### 장치 테스트 페이지 (임시 도구)
+
+[`public/device-test.html`](public/device-test.html)은 빌드 없이 Chrome에서 바로 여는 단일 파일이에요. 입력 장치 선택, 실제 track settings, RMS/피크 레벨, 대략적인 음정(E1/E2 옥타브 확인)을 보여줘요. `npm run dev` 중이면 `http://localhost:5173/device-test.html`로도 열려요. MVP 화면이 아니라 E1 실험용이에요.
+
 ## 문서 (￣▽￣)ノ
 
 - [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) — 상세 기획 요약 (기능 명세, E1 검증 전략, 개발 단계, 리스크, 히키락스타)
