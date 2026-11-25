@@ -29,9 +29,9 @@ interface Box {
 }
 
 /**
- * 다음 도망 위치 (원래 자리 기준 px). 원래 자리에서 70~170px 떨어진 곳을 고르고,
- * 화면 밖으로 나가지 않게 자른다.
- * @param home 버튼의 원래 자리 (이동 전 위치)
+ * 다음 도망 위치 (원래 자리 기준 translate px). 화면 안 아무 곳으로 크게 점프한다:
+ * 지금 자리에서 화면 짧은 변의 40%(최소 160px) 넘게 떨어지고, avoid(쓸래 버튼)와 겹치지 않는 곳.
+ * @param home 버튼의 원래 자리 (이동 전 위치, 화면 좌표)
  * @param rand 0~1 난수 (테스트에서 고정)
  */
 export function nextDodge(
@@ -39,18 +39,30 @@ export function nextDodge(
   viewW: number,
   viewH: number,
   prev: { x: number; y: number },
+  avoid: Box | null = null,
   rand: () => number = Math.random,
 ): { x: number; y: number } {
-  const margin = 8;
-  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-  const pick = () => (rand() < 0.5 ? -1 : 1) * (70 + rand() * 100);
-  // 직전 자리와 너무 가까우면 다시 고른다 (같은 자리에서 꿈틀대면 도망친 것 같지 않다).
-  for (let i = 0; i < 6; i++) {
-    const x = clamp(pick(), margin - home.left, viewW - margin - home.right);
-    const y = clamp(pick() * 0.6, margin - home.top, viewH - margin - home.bottom);
-    if (Math.hypot(x - prev.x, y - prev.y) > 60 || i === 5) return { x, y };
+  const margin = 12;
+  const w = home.right - home.left;
+  const h = home.bottom - home.top;
+  const minJump = Math.max(160, 0.4 * Math.min(viewW, viewH));
+  const now = { left: home.left + prev.x, top: home.top + prev.y };
+  const hitsAvoid = (left: number, top: number) =>
+    avoid !== null &&
+    left < avoid.right + 16 &&
+    left + w > avoid.left - 16 &&
+    top < avoid.bottom + 16 &&
+    top + h > avoid.top - 16;
+  let best = { left: now.left, top: now.top, d: -1 };
+  for (let i = 0; i < 24; i++) {
+    const left = margin + rand() * Math.max(0, viewW - 2 * margin - w);
+    const top = margin + rand() * Math.max(0, viewH - 2 * margin - h);
+    if (hitsAvoid(left, top)) continue;
+    const d = Math.hypot(left - now.left, top - now.top);
+    if (d >= minJump) return { x: left - home.left, y: top - home.top };
+    if (d > best.d) best = { left, top, d }; // 좁은 화면이면 그나마 가장 먼 곳
   }
-  return prev;
+  return { x: best.left - home.left, y: best.top - home.top };
 }
 
 /**
@@ -80,16 +92,19 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
       right: r.right - pos.x,
       bottom: r.bottom - pos.y,
     };
-    setPos(nextDodge(home, innerWidth, innerHeight, pos));
+    const g = go.current?.getBoundingClientRect() ?? null;
+    setPos(nextDodge(home, innerWidth, innerHeight, pos, g));
     setDodges(dodges + 1);
   };
 
   return (
     <Solo pose={nopePose(dodges)} title="튜너 쓸래말래" say={gone ? NOPE_GONE_SAY : undefined}>
       <p>
-        오인페에 베이스 꽂았으면 시작 눌러줘.
+        오인페에 베이스 꽂았으면 <span class="nb">시작 눌러줘.</span>
         <br />
-        브라우저가 입력 권한을 물어볼 거야. 소리는 이 브라우저 밖으로 절대 안 나가.
+        브라우저가 입력 권한을 <span class="nb">물어볼 거야.</span>
+        <br />
+        소리는 이 브라우저 밖으로 <span class="nb">절대 안 나가.</span>
       </p>
       <div class="btns">
         <button
@@ -118,7 +133,7 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
       <p class="tiny">
         로그인도 설치도 없어.
         <br />
-        Chrome · Edge · Safari · Firefox 최신 버전
+        <span class="nb">Chrome · Edge · Safari · Firefox</span> <span class="nb">최신 버전</span>
       </p>
     </Solo>
   );

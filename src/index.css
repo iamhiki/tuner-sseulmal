@@ -143,6 +143,7 @@ li {
 
 .btn {
   appearance: none;
+  white-space: nowrap; /* 버튼 글자는 한 줄 (도망치며 작아져도 두 줄로 깨지지 않게) */
   font: inherit;
   font-size: 19px;
   color: var(--color-white);
@@ -243,6 +244,7 @@ input:focus-visible {
 
 .solo-cat .bubble {
   white-space: normal;
+  text-wrap: balance;
   text-align: center;
   max-width: 240px;
 }
@@ -254,6 +256,12 @@ input:focus-visible {
 .solo p {
   margin: 10px 0 0;
   max-width: 34em;
+  text-wrap: balance; /* 짧은 안내문: 마지막 줄에 한 단어만 떨어지지 않게 */
+}
+
+/* 끊기면 어색한 덩어리 (브라우저 목록 등) */
+.nb {
+  white-space: nowrap;
 }
 
 .tiny {

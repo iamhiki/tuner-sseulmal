@@ -1,28 +1,46 @@
 import { describe, expect, it } from "vitest";
 import { NOPE_GONE_SAY, NOPE_LABELS, nextDodge, nopePose } from "./StartScreen.tsx";
 
-const home = { left: 200, top: 300, right: 300, bottom: 352 };
-
 describe("nextDodge (말래 버튼 도망)", () => {
-  it("원래 자리에서 70px 넘게 떨어진 곳으로 간다", () => {
-    let seed = 1;
-    const rand = () => {
+  const home = { left: 560, top: 300, right: 680, bottom: 352 }; // 120×52 버튼
+  const go = { left: 400, top: 300, right: 540, bottom: 352 }; // 쓸래 버튼
+  const seeded = () => {
+    let seed = 7;
+    return () => {
       seed = (seed * 16807) % 2147483647;
       return seed / 2147483647;
     };
-    for (let i = 0; i < 50; i++) {
-      const p = nextDodge(home, 1280, 800, { x: 0, y: 0 }, rand);
-      expect(Math.abs(p.x)).toBeGreaterThanOrEqual(70);
+  };
+
+  it("화면 안 먼 곳으로 점프한다 (짧은 변의 40% 이상)", () => {
+    const rand = seeded();
+    let pos = { x: 0, y: 0 };
+    for (let i = 0; i < 30; i++) {
+      const next = nextDodge(home, 1280, 800, pos, go, rand);
+      expect(Math.hypot(next.x - pos.x, next.y - pos.y)).toBeGreaterThanOrEqual(320);
+      pos = next;
     }
   });
 
-  it("화면 밖으로 나가지 않는다 (좁은 휴대폰 화면)", () => {
-    for (const r of [0, 0.25, 0.5, 0.75, 0.999]) {
-      const p = nextDodge(home, 320, 640, { x: 0, y: 0 }, () => r);
-      expect(home.left + p.x).toBeGreaterThanOrEqual(8);
-      expect(home.right + p.x).toBeLessThanOrEqual(312);
-      expect(home.top + p.y).toBeGreaterThanOrEqual(8);
-      expect(home.bottom + p.y).toBeLessThanOrEqual(632);
+  it("화면 밖으로 나가지 않고 쓸래 버튼을 가리지 않는다 (휴대폰 폭)", () => {
+    const phoneHome = { left: 200, top: 500, right: 320, bottom: 552 };
+    const phoneGo = { left: 60, top: 500, right: 190, bottom: 552 };
+    const rand = seeded();
+    let pos = { x: 0, y: 0 };
+    for (let i = 0; i < 30; i++) {
+      pos = nextDodge(phoneHome, 390, 844, pos, phoneGo, rand);
+      const left = phoneHome.left + pos.x;
+      const top = phoneHome.top + pos.y;
+      expect(left).toBeGreaterThanOrEqual(12);
+      expect(left + 120).toBeLessThanOrEqual(390 - 12);
+      expect(top).toBeGreaterThanOrEqual(12);
+      expect(top + 52).toBeLessThanOrEqual(844 - 12);
+      const overlaps =
+        left < phoneGo.right &&
+        left + 120 > phoneGo.left &&
+        top < phoneGo.bottom &&
+        top + 52 > phoneGo.top;
+      expect(overlaps).toBe(false);
     }
   });
 
