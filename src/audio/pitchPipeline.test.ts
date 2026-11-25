@@ -176,7 +176,7 @@ describe("PitchPipeline 줄 바꿔 치기", () => {
       .map((r) => r.cents); // 1.5초 뒤부터
     expect(c.length).toBeGreaterThan(400);
     expect(Math.max(...c) - Math.min(...c)).toBeLessThan(2);
-  });
+  }, 30_000); // 합성음 수 초 분량을 프레임마다 분석해서 CI에서 5초를 넘는다
 
   it("울리는 중 줄감개를 돌리면 따라간다 (1초에 +60¢)", () => {
     const glide = (t: number) => (t < 1.5 ? 0 : Math.min(60, (t - 1.5) * 60));
@@ -185,5 +185,5 @@ describe("PitchPipeline 줄 바꿔 치기", () => {
     expect(last.status).toBe("ok");
     expect(last.stringIndex).toBe(3);
     expect(Math.abs(last.cents - 60)).toBeLessThan(3);
-  });
+  }, 30_000); // 합성음 수 초 분량을 프레임마다 분석해서 CI에서 5초를 넘는다
 });
