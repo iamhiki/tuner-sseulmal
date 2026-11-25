@@ -33,14 +33,14 @@ import {
   usePitchLoop,
 } from "../hooks/usePitch.ts";
 import { bassTuning } from "../lib/bass.ts";
-import { tunerView } from "./tunerView.ts";
+import { nextInTuneString, tunerView } from "./tunerView.ts";
 
 function Tuner() {
   const p = pitch.value;
   const lv = level.value;
-  const wasInTune = useRef(false);
-  const view = tunerView(lv.state, p, quietMs.value, wasInTune.current);
-  wasInTune.current = view.pose === "intune";
+  const inTuneString = useRef(-1);
+  const view = tunerView(lv.state, p, quietMs.value, p.stringIndex === inTuneString.current);
+  inTuneString.current = nextInTuneString(inTuneString.current, lv.state, p, view);
   // 확정값이 없을 때도 목표 줄은 직전 값(처음엔 E1)을 보여준다.
   const lastString = useRef(0);
   if (p.stringIndex >= 0) lastString.current = p.stringIndex;
