@@ -1,23 +1,136 @@
-import { bassTuning } from "../lib/bass";
+import { useEffect, useRef } from "preact/hooks";
+import { DeviceInfo } from "../components/DeviceInfo.tsx";
+import { DeviceSelector } from "../components/DeviceSelector.tsx";
+import { Header } from "../components/Header.tsx";
+import { InputLevelMeter } from "../components/InputLevelMeter.tsx";
+import { StartScreen } from "../components/StartScreen.tsx";
+import { DeniedScreen, UnpluggedScreen, UnsupportedScreen } from "../components/StatusMessage.tsx";
+import { TunerDisplay } from "../components/TunerDisplay.tsx";
+import { TuningPreset } from "../components/TuningPreset.tsx";
+import {
+  busy,
+  chooseDevice,
+  currentId,
+  currentLabel,
+  devices,
+  goDevices,
+  goTuner,
+  notice,
+  replug,
+  restart,
+  screen,
+  settings,
+  start,
+  watchDeviceChanges,
+} from "../hooks/useAudioInput.ts";
+import {
+  level,
+  lockedString,
+  pitch,
+  quietMs,
+  toggleString,
+  tunedStrings,
+  usePitchLoop,
+} from "../hooks/usePitch.ts";
+import { bassTuning } from "../lib/bass.ts";
+import { tunerView } from "./tunerView.ts";
 
-/**
- * 0단계 빈 앱. 엔진이 이식됐는지 보여주는 자리만 있다.
- * 장치 선택(1단계)과 레벨 미터(2단계)가 여기에 붙는다.
- */
-export function App() {
+function Tuner() {
+  const p = pitch.value;
+  const lv = level.value;
+  const view = tunerView(lv.state, p, quietMs.value);
+  // 확정값이 없을 때도 목표 줄은 직전 값(처음엔 E1)을 보여준다.
+  const lastString = useRef(0);
+  if (p.stringIndex >= 0) lastString.current = p.stringIndex;
+  const targetIndex = lockedString.value ?? lastString.current;
   return (
-    <main class="shell">
-      <h1>튜너쓸말</h1>
-      <p class="tagline">튜너 쓸래, 말래?</p>
-      <ul class="strings" aria-label="4현 표준 튜닝">
-        {bassTuning.strings.map((s) => (
-          <li key={`${s.name}${s.octave}`}>
-            <strong>{`${s.name}${s.octave}`}</strong>
-            <span>{s.freq.toFixed(2)} Hz</span>
-          </li>
-        ))}
-      </ul>
-      <p class="status">준비 중이에요. 다음 단계에서 오인페를 고를 수 있어요.</p>
-    </main>
+    <section class="box tuner" aria-label="튜너">
+      <TunerDisplay pitch={p} view={view} target={bassTuning.strings[targetIndex]} />
+      <TuningPreset
+        strings={bassTuning.strings}
+        current={p.stringIndex}
+        locked={lockedString.value}
+        tuned={tunedStrings.value}
+        onToggle={toggleString}
+      />
+      <div class="foot">
+        <InputLevelMeter level={lv} />
+        <DeviceInfo label={currentLabel.value} settings={settings.value} onChange={goDevices} />
+      </div>
+    </section>
+  );
+}
+
+function deviceSub(): string {
+  const s = settings.value;
+  if (!s) return "";
+  const khz = `${(s.sampleRate / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} kHz`;
+  return s.channelCount ? `${khz} · ${s.channelCount}채널` : khz;
+}
+
+export function App() {
+  usePitchLoop();
+  useEffect(() => watchDeviceChanges(), []);
+  const sc = screen.value;
+
+  let body = null;
+  switch (sc) {
+    case "start":
+      body = <StartScreen busy={busy.value} onStart={start} />;
+      break;
+    case "devices":
+      body = (
+        <DeviceSelector
+          devices={devices.value}
+          currentId={currentId.value}
+          currentSub={deviceSub()}
+          bar={level.value.bar}
+          busy={busy.value}
+          notice={notice.value}
+          onChoose={chooseDevice}
+          onConfirm={goTuner}
+        />
+      );
+      break;
+    case "tuner":
+      body = <Tuner />;
+      break;
+    case "denied":
+      body = <DeniedScreen onRetry={start} />;
+      break;
+    case "unplugged":
+      body = (
+        <UnpluggedScreen
+          deviceLabel={currentLabel.value}
+          notice={notice.value}
+          busy={busy.value}
+          onReplug={replug}
+          onChoose={goDevices}
+        />
+      );
+      break;
+    case "unsupported":
+      body = <UnsupportedScreen onHome={restart} />;
+      break;
+  }
+
+  const pill =
+    sc === "devices"
+      ? "장치 고르는 중"
+      : sc === "tuner" || sc === "unplugged"
+        ? currentLabel.value || "이름 없는 입력"
+        : null;
+  return (
+    <>
+      {/* 낙서처럼 살짝 삐뚤게 (쓸말이 선에만 쓴다) */}
+      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+        <filter id="wob">
+          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves={2} seed={3} />
+          <feDisplacementMap in="SourceGraphic" scale={3.2} />
+        </filter>
+      </svg>
+      <Header deviceLabel={pill} onDeviceClick={sc === "tuner" ? goDevices : undefined} />
+      <main class="band main">{body}</main>
+    </>
   );
 }

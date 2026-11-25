@@ -123,6 +123,23 @@ npm run lint    # 포맷·린트 검사 (Biome)
 npm run build   # 타입 체크 + 프로덕션 빌드
 ```
 
+### 베이스 없이 화면 보기
+
+주소 뒤에 `?tone`을 붙이면(예: `http://localhost:5173/?tone`) 장치 목록에 **테스트 톤 (합성음)**이 생겨요. E1 −18¢ → A1 +1¢ → D2 +23¢(치는 순간 A줄 공명 섞음) → G2 → 쉼을 3초씩 돌려서 쓸말이 포즈와 화면 상태를 다 볼 수 있어요. 스피커로는 안 나와요.
+
+### 코드 구조
+
+```
+src/
+  app/          App.tsx (화면 전환), tunerView.ts (쓸말이 포즈·문구 고르기)
+  components/   Header, StartScreen, DeviceSelector, TunerDisplay, TuningPreset,
+                InputLevelMeter, DeviceInfo, StatusMessage, Mascot
+  audio/        deviceManager.ts (권한·장치), audioEngine.ts (분석 그래프),
+                inputLevel.ts (레벨), pitchPipeline.ts (detect → OctaveHold → 게이트 → One-Euro)
+  hooks/        useAudioInput.ts (장치·화면 상태), usePitch.ts (프레임 루프)
+  lib/          음정 엔진 (fgnass/tuner 이식)
+```
+
 ### 장치 테스트 페이지 (임시 도구)
 
 [`public/device-test.html`](public/device-test.html)은 빌드 없이 Chrome에서 바로 여는 단일 파일이에요. 입력 장치 선택, 실제 track settings, RMS/피크 레벨, 대략적인 음정(E1/E2 옥타브 확인)을 보여줘요. `npm run dev` 중이면 `http://localhost:5173/device-test.html`로도 열려요. MVP 화면이 아니라 E1 실험용이에요.
