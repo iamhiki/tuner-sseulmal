@@ -39,4 +39,12 @@ describe("OctaveHold", () => {
     expect(h.update(73.42, 0.09)).toBe(73.42); // 다른 줄
     expect(h.update(73.42 * 1.01, 0.08)).toBeCloseTo(73.42 * 1.01, 5); // 튜닝 조정
   });
+
+  it("does not lock onto a single octave-down misread", () => {
+    // 실기: 98 Hz를 울리는 중 검출기가 1프레임만 49 Hz로 읽음 → 뒤의 98 Hz가 반으로 깎이면 안 된다
+    const h = new OctaveHold();
+    for (let i = 0; i < 40; i++) h.update(98, 0.05);
+    expect(h.update(49.05, 0.05)).toBeCloseTo(49.05, 2); // 이 1프레임은 그대로 (뒤의 게이트가 거른다)
+    for (let i = 0; i < 30; i++) expect(h.update(98, 0.05)).toBe(98);
+  });
 });
