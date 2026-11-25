@@ -160,6 +160,13 @@ li {
   color: var(--color-ink);
 }
 
+/* "말래" 버튼: 다가가면 도망친다 (translate는 :active의 transform과 따로 논다) */
+.btn.nope {
+  position: relative;
+  z-index: 1;
+  transition: translate 0.22s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
 .btn:active:not(:disabled) {
   transform: translate(2px, 3px);
   box-shadow: 1px 1px 0 var(--color-ink);

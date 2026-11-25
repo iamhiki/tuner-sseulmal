@@ -1,11 +1,81 @@
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { Solo } from "./Solo.tsx";
 
-/** F-01 시작 (권한 요청 전). */
+/** 도망칠 때마다 바뀌는 "말래" 버튼 문구. 마지막은 지쳐서 포기한 상태. */
+export const NOPE_LABELS = [
+  "말래…",
+  "어딜!",
+  "진짜 말래?",
+  "한 줄만 튕겨 봐",
+  "잡아 봐~",
+  "헉헉… 알겠어",
+];
+/** 이만큼 도망치면 포기하고 눌린다. */
+export const NOPE_MAX_DODGES = NOPE_LABELS.length - 1;
+
+interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/**
+ * 다음 도망 위치 (원래 자리 기준 px). 원래 자리에서 70~170px 떨어진 곳을 고르고,
+ * 화면 밖으로 나가지 않게 자른다.
+ * @param home 버튼의 원래 자리 (이동 전 위치)
+ * @param rand 0~1 난수 (테스트에서 고정)
+ */
+export function nextDodge(
+  home: Box,
+  viewW: number,
+  viewH: number,
+  prev: { x: number; y: number },
+  rand: () => number = Math.random,
+): { x: number; y: number } {
+  const margin = 8;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const pick = () => (rand() < 0.5 ? -1 : 1) * (70 + rand() * 100);
+  // 직전 자리와 너무 가까우면 다시 고른다 (같은 자리에서 꿈틀대면 도망친 것 같지 않다).
+  for (let i = 0; i < 6; i++) {
+    const x = clamp(pick(), margin - home.left, viewW - margin - home.right);
+    const y = clamp(pick() * 0.6, margin - home.top, viewH - margin - home.bottom);
+    if (Math.hypot(x - prev.x, y - prev.y) > 60 || i === 5) return { x, y };
+  }
+  return prev;
+}
+
+/** F-01 시작 (권한 요청 전). "말래"는 몇 번 도망치다 지쳐서 눌려 준다. */
 export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => void }) {
   const [declined, setDeclined] = useState(false);
+  const [dodges, setDodges] = useState(0);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const nope = useRef<HTMLButtonElement>(null);
+  const tired = dodges >= NOPE_MAX_DODGES;
+
+  const dodge = () => {
+    const el = nope.current;
+    if (!el || tired || declined) return;
+    const r = el.getBoundingClientRect();
+    const home = {
+      left: r.left - pos.x,
+      top: r.top - pos.y,
+      right: r.right - pos.x,
+      bottom: r.bottom - pos.y,
+    };
+    const next =
+      dodges + 1 >= NOPE_MAX_DODGES
+        ? { x: 0, y: 0 }
+        : nextDodge(home, innerWidth, innerHeight, pos);
+    setPos(next);
+    setDodges(dodges + 1);
+  };
+
   return (
-    <Solo pose={declined ? "sleep" : "idle"} title="튜너 쓸래말래">
+    <Solo
+      pose={declined ? "sleep" : dodges > 0 && !tired ? "unsure" : "idle"}
+      title="튜너 쓸래말래"
+    >
       <p>
         오인페에 베이스 꽂았으면 시작 눌러줘.
         <br />
@@ -15,8 +85,19 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
         <button type="button" class="btn" onClick={onStart} disabled={busy}>
           쓸래! 시작
         </button>
-        <button type="button" class="btn ghost" onClick={() => setDeclined(true)}>
-          말래…
+        <button
+          ref={nope}
+          type="button"
+          class="btn ghost nope"
+          style={{ translate: `${pos.x}px ${pos.y}px` }}
+          onPointerEnter={(e) => e.pointerType === "mouse" && dodge()}
+          onClick={(e) => {
+            // 키보드(detail 0)로 누르면 장난치지 않고 바로 눌린다.
+            if (tired || e.detail === 0) setDeclined(true);
+            else dodge();
+          }}
+        >
+          {NOPE_LABELS[Math.min(dodges, NOPE_MAX_DODGES)]}
         </button>
       </div>
       {declined && (
