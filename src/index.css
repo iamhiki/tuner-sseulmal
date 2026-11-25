@@ -432,6 +432,16 @@ kbd {
   transform: translateX(-50%) rotate(45deg);
 }
 
+/* 0¢ 기준선: 핀 끝이 이 선에 겹치면 맞은 것 */
+.center {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 84px;
+  border-left: 4px solid var(--color-ink);
+  margin-left: -2px;
+}
+
 .pin {
   position: absolute;
   bottom: 38px;

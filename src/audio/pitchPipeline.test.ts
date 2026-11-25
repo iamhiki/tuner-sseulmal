@@ -134,4 +134,56 @@ describe("PitchPipeline 줄 바꿔 치기", () => {
     expect(((settled - switchFrame) * FRAME_MS) / 1000 - LEN / SR).toBeLessThan(0.4);
     for (const r of out.slice(settled)) expect(r.stringIndex).toBe(2);
   });
+
+  /**
+   * 배음끼리 높이가 조금씩 다른 줄 (실측 G2: 1배음 -12¢, 3배음 +5¢)을 흉내 낸다.
+   * 높은 배음이 먼저 사라진다. centsAt(t): 줄감개로 바꾼 음 높이 (센트).
+   */
+  function decaying(freq: number, seconds: number, centsAt = (_t: number) => 0) {
+    const parts: Array<[number, number, number, number]> = [
+      // [차수, 센트 차이, 처음 세기, 사라지는 시간(초)]
+      [1, -12, 0.2, 30],
+      [2, 0, 0.45, 12],
+      [3, 5, 0.35, 2],
+      [4, 2, 0.25, 1.5],
+    ];
+    const n = Math.round(seconds * SR) + LEN;
+    const x = new Float32Array(n);
+    const phase = parts.map(() => 0);
+    for (let i = 0; i < n; i++) {
+      const t = i / SR;
+      const f = freq * 2 ** (centsAt(t) / 1200);
+      let v = 0;
+      parts.forEach(([k, c, g, tau], j) => {
+        phase[j] += (2 * Math.PI * k * f * 2 ** (c / 1200)) / SR;
+        v += g * Math.exp(-t / tau) * Math.sin(phase[j]);
+      });
+      x[i] = 0.3 * v;
+    }
+    return (p: PitchPipeline) => {
+      const out = [];
+      for (let k = 0; k * HOP + LEN <= n; k++)
+        out.push(p.process(x.subarray(k * HOP, k * HOP + LEN), SR, k * FRAME_MS));
+      return out;
+    };
+  }
+
+  it("한 음이 울리는 동안 배음이 사라져도 값이 흘러가지 않는다", () => {
+    const out = decaying(strings[3].freq, 10)(new PitchPipeline(strings));
+    const c = out
+      .slice(90)
+      .filter((r) => r.status === "ok")
+      .map((r) => r.cents); // 1.5초 뒤부터
+    expect(c.length).toBeGreaterThan(400);
+    expect(Math.max(...c) - Math.min(...c)).toBeLessThan(2);
+  });
+
+  it("울리는 중 줄감개를 돌리면 따라간다 (1초에 +60¢)", () => {
+    const glide = (t: number) => (t < 1.5 ? 0 : Math.min(60, (t - 1.5) * 60));
+    const out = decaying(strings[3].freq, 4, glide)(new PitchPipeline(strings));
+    const last = out[out.length - 1];
+    expect(last.status).toBe("ok");
+    expect(last.stringIndex).toBe(3);
+    expect(Math.abs(last.cents - 60)).toBeLessThan(3);
+  });
 });

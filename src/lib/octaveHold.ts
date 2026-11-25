@@ -12,6 +12,10 @@
  * 새 음이 섞여 있는 동안 검출값이 엉뚱한 저음(예: A1 꼬리 위에 D2를 치면 37 Hz)으로 나올 수
  * 있는데, 그 값을 기준으로 잡으면 뒤이어 나오는 진짜 D2(74 Hz)를 "2배 튐"으로 보고 줄이 울리는
  * 내내 반으로 깎아 버린다 (앱 연결 중 합성음으로 발견).
+ *
+ * 같은 이유로, 울리는 도중에도 기준 음은 HELD_FRAMES 넘게 꾸준히 이어진 값만 쓴다. 검출기가
+ * 1프레임만 한 옥타브 아래(G2 → 49 Hz)로 읽으면 그 값이 기준이 되어 진짜 G2(98 Hz)를 계속
+ * 반으로 깎았다 (실기: 줄감개를 돌리던 1번줄이 "3번줄 -200¢"에 갇힘).
  */
 
 /** 직전 음의 2배에서 이 센트 안이면 옥타브 튐으로 본다. */
@@ -20,16 +24,20 @@ const OCTAVE_JUMP_CENTS = 35;
 const ONSET_RATIO = 2;
 /** 새로 친 뒤(또는 처음 소리가 난 뒤) 바로잡지 않는 프레임 수. 60fps에서 0.25초. */
 const ATTACK_FRAMES = 15;
+/** 기준 음으로 인정하는 최소 연속 프레임 수 (±OCTAVE_JUMP_CENTS 안). 60fps에서 약 0.17초. */
+const HELD_FRAMES = 10;
 
 export class OctaveHold {
   private held = -1;
   private floorRms = Number.POSITIVE_INFINITY;
   private sinceOnset = 0;
+  private heldFrames = 0;
 
   reset(): void {
     this.held = -1;
     this.floorRms = Number.POSITIVE_INFINITY;
     this.sinceOnset = 0;
+    this.heldFrames = 0;
   }
 
   /** 검출 결과(freq ≤ 0이면 음 없음)를 받아 옥타브 튐을 바로잡은 주파수를 돌려준다. */
@@ -45,10 +53,21 @@ export class OctaveHold {
     let f = freq;
     if (
       this.sinceOnset > ATTACK_FRAMES &&
-      this.held > 0 &&
+      this.heldFrames >= HELD_FRAMES &&
       Math.abs(1200 * Math.log2(f / (2 * this.held))) < OCTAVE_JUMP_CENTS
     )
       f /= 2;
+    // 울리는 도중 정확히 한 옥타브 아래로 읽힌 값은 오래 이어져도 기준으로 받지 않는다. 받으면 뒤의
+    // 진짜 음이 "2배 튐"으로 보여 반으로 깎인다. 새로 치거나 소리가 끊기면 풀린다.
+    // shortcut: 처음부터 옥타브 위로 잘못 잡힌 기준은 바로잡지 못한다, 실기에서 보이면 기준 재검증을 넣는다.
+    if (
+      this.sinceOnset > ATTACK_FRAMES &&
+      this.heldFrames >= HELD_FRAMES &&
+      Math.abs(1200 * Math.log2((2 * f) / this.held)) < OCTAVE_JUMP_CENTS
+    )
+      return f;
+    const same = this.held > 0 && Math.abs(1200 * Math.log2(f / this.held)) < OCTAVE_JUMP_CENTS;
+    this.heldFrames = same ? this.heldFrames + 1 : 1;
     this.held = f;
     return f;
   }
