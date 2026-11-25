@@ -71,6 +71,7 @@ export function TunerDisplay({
             </ol>
           </div>
         )}
+        <div class="center" aria-hidden="true" />
         <div class="pin" style={{ left: `${pos}%` }} />
         <div class="walker" style={{ left: `${pos}%` }}>
           <div class="bubble" aria-live="polite">
