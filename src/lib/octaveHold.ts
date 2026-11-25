@@ -57,6 +57,15 @@ export class OctaveHold {
       Math.abs(1200 * Math.log2(f / (2 * this.held))) < OCTAVE_JUMP_CENTS
     )
       f /= 2;
+    // 울리는 도중 정확히 한 옥타브 아래로 읽힌 값은 오래 이어져도 기준으로 받지 않는다. 받으면 뒤의
+    // 진짜 음이 "2배 튐"으로 보여 반으로 깎인다. 새로 치거나 소리가 끊기면 풀린다.
+    // shortcut: 처음부터 옥타브 위로 잘못 잡힌 기준은 바로잡지 못한다, 실기에서 보이면 기준 재검증을 넣는다.
+    if (
+      this.sinceOnset > ATTACK_FRAMES &&
+      this.heldFrames >= HELD_FRAMES &&
+      Math.abs(1200 * Math.log2((2 * f) / this.held)) < OCTAVE_JUMP_CENTS
+    )
+      return f;
     const same = this.held > 0 && Math.abs(1200 * Math.log2(f / this.held)) < OCTAVE_JUMP_CENTS;
     this.heldFrames = same ? this.heldFrames + 1 : 1;
     this.held = f;

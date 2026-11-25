@@ -46,5 +46,14 @@ describe("OctaveHold", () => {
     for (let i = 0; i < 40; i++) h.update(98, 0.05);
     expect(h.update(49.05, 0.05)).toBeCloseTo(49.05, 2); // 이 1프레임은 그대로 (뒤의 게이트가 거른다)
     for (let i = 0; i < 30; i++) expect(h.update(98, 0.05)).toBe(98);
+    // 그 뒤에도 옥타브 위 튐은 계속 바로잡는다
+    for (let i = 0; i < 10; i++) expect(h.update(196, 0.05)).toBe(98);
+  });
+
+  it("does not adopt a sustained octave-down misread as the baseline", () => {
+    const h = new OctaveHold();
+    for (let i = 0; i < 40; i++) h.update(98, 0.05);
+    for (let i = 0; i < 20; i++) h.update(49, 0.05); // 오래 이어진 오독
+    for (let i = 0; i < 10; i++) expect(h.update(98, 0.05)).toBe(98);
   });
 });

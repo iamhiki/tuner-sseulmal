@@ -90,9 +90,9 @@ export class PitchPipeline {
   process(buffer: Float32Array, sampleRate: number, now: number): PitchReading {
     const r = this.detector.detect(buffer, sampleRate, this.fixed);
     const f = this.octave.update(r.freq, r.rms);
-    const shown = this.gate.update(f);
     const dt = this.lastTime < 0 ? 0 : (now - this.lastTime) / 1000;
     this.lastTime = now;
+    const shown = this.gate.update(f, dt > 0 ? dt : undefined);
 
     if (!(shown > 0)) {
       this.euro.reset();

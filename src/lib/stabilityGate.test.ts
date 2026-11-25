@@ -118,4 +118,14 @@ describe("StabilityGate", () => {
     expect(out.slice(0, 4).every((v) => v === G2)).toBe(true);
     expect(out[out.length - 1]).toBe(D2);
   });
+
+  it("scales the follow limit with the frame interval (30fps peg turn)", () => {
+    const g = new StabilityGate();
+    for (let i = 0; i < 10; i++) g.update(G2, 1 / 30);
+    let f = G2;
+    for (let i = 0; i < 20; i++) {
+      f *= 2 ** (10 / 1200); // 30fps에서 프레임당 10¢ = 초당 300¢
+      expect(g.update(f, 1 / 30)).toBe(f);
+    }
+  });
 });

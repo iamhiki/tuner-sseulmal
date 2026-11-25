@@ -76,8 +76,11 @@ export class StabilityGate {
     return Math.abs(cents(a, b)) <= this.toleranceCents + 1e-9; // 부동소수점 오차 허용
   }
 
-  /** 프레임 하나의 검출값을 받아 화면에 보여줄 값(없으면 -1)을 돌려준다. */
-  update(freq: number): number {
+  /**
+   * 프레임 하나의 검출값을 받아 화면에 보여줄 값(없으면 -1)을 돌려준다.
+   * @param dt 직전 프레임과의 간격 (초). followCents를 60fps 기준으로 비례해 쓴다 (느린 기기·120Hz 화면).
+   */
+  update(freq: number, dt = 1 / 60): number {
     if (!(freq > 0)) {
       this.reset();
       return -1;
@@ -88,8 +91,9 @@ export class StabilityGate {
     // 확정된 동안에는 프레임끼리도 차분해야 새 구간으로 센다 (미끄러지는 값이 쌓여 확정되지 않게).
     const prev = this.prev;
     this.prev = freq;
-    const steady =
-      !(this.shown > 0) || (prev > 0 && Math.abs(cents(freq, prev)) <= this.followCents);
+    // 프레임당 허용 변화. 잡음은 프레임 간격과 상관없으니 너무 줄이지는 않는다.
+    const limit = this.followCents * Math.min(4, Math.max(0.5, dt * 60));
+    const steady = !(this.shown > 0) || (prev > 0 && Math.abs(cents(freq, prev)) <= limit);
     if (steady && this.anchor > 0 && this.near(freq, this.anchor)) {
       this.count++;
     } else {
@@ -98,7 +102,7 @@ export class StabilityGate {
     }
 
     // 확정값과 가까우면(튜닝 조정) 바로 따라가고, 새 구간이 minFrames를 채워도 확정한다.
-    const follow = this.shown > 0 && Math.abs(cents(freq, this.shown)) <= this.followCents;
+    const follow = this.shown > 0 && Math.abs(cents(freq, this.shown)) <= limit;
     if (this.count >= this.minFrames || follow) {
       this.shown = freq;
       this.anchor = freq;
