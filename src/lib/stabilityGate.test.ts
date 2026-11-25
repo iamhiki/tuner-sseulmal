@@ -11,15 +11,16 @@ describe("StabilityGate", () => {
   it("hides the D2 attack spike from the A string (실측 108~111 Hz)", () => {
     const g = new StabilityGate();
     const out = run(g, [110.2, 108.4, 111.0, D2 + 0.4, 109.5, ...repeat(D2, 30)]);
-    expect(out.some((f) => f > 100)).toBe(false);
-    expect(out[out.length - 1]).toBeCloseTo(D2, 5);
+    // 공격음 5프레임 + D2가 확정되기 전 4프레임은 모두 -1 (분석 중)
+    expect(out.slice(0, 9)).toEqual(repeat(-1, 9));
+    expect(out.slice(9)).toEqual(repeat(D2, 26));
   });
 
   it("hides the G2 attack spike (실측 68 Hz)", () => {
     const g = new StabilityGate();
     const out = run(g, [68.1, ...repeat(G2, 30)]);
-    expect(out.some((f) => f > 0 && f < 90)).toBe(false);
-    expect(out[out.length - 1]).toBe(G2);
+    expect(out.slice(0, 5)).toEqual(repeat(-1, 5));
+    expect(out.slice(5)).toEqual(repeat(G2, 26));
   });
 
   it("shows a clean note after minFrames (≈0.08 s at 60 fps)", () => {
@@ -62,7 +63,26 @@ describe("StabilityGate", () => {
     run(g, repeat(D2, 10));
     const out = run(g, [110, 60, 120, 50, 130]);
     expect(out).toEqual([D2, D2, D2, -1, -1]);
-    expect(g.state).toBe("pending");
+    expect(g.state).toBe("unstable"); // 처음 분석 중(pending)과 구분
+  });
+
+  it("does not confirm a run that keeps drifting (each step small, total large)", () => {
+    const g = new StabilityGate({ minFrames: 5, toleranceCents: 50 });
+    let f = 100;
+    const out: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      out.push(g.update(f));
+      f *= 2 ** (20 / 1200); // 프레임마다 +20¢, 5프레임이면 +80¢
+    }
+    expect(out).toEqual(repeat(-1, 10));
+  });
+
+  it("treats readings exactly at the tolerance (or zero tolerance) as the same note", () => {
+    const g0 = new StabilityGate({ minFrames: 3, toleranceCents: 0 });
+    expect(run(g0, repeat(G2, 3))).toEqual([-1, -1, G2]);
+    const g = new StabilityGate({ minFrames: 2, toleranceCents: 50 });
+    const edge = G2 * 2 ** (50 / 1200);
+    expect(run(g, [G2, edge])).toEqual([-1, edge]);
   });
 
   it("resets on silence", () => {
