@@ -63,7 +63,7 @@ export function TunerDisplay({
       <div class="track">
         {view.showCableHint && (
           <div class="hint">
-            <b>케이블 꽂았어?</b>
+            <b>케이블 꽂으셨냥?</b>
             <ol>
               <li>베이스 ↔ 오인페 케이블 확인</li>
               <li>오인페 게인 노브 조금 올리기</li>
@@ -96,8 +96,8 @@ export function TunerDisplay({
         </div>
       </div>
       <div class="flatsharp" aria-hidden="true">
-        <span>♭ 낮아요, 감아줘</span>
-        <span>높아요, 풀어줘 ♯</span>
+        <span>♭ 낮아요, 감아요</span>
+        <span>높아요, 풀어요 ♯</span>
       </div>
     </>
   );

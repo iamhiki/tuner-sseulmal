@@ -49,12 +49,12 @@ describe("nextDodge (말래 버튼 도망)", () => {
     // 문구를 통째로 고정한다: 바뀌면 "눌러 주겠다"는 뉘앙스가 없는지 사람이 다시 본다.
     expect(NOPE_LABELS).toEqual([
       "말래…",
-      "그건 장식이에요",
-      "선택권은 없습니다",
-      "쓸래밖에 없어요",
-      "마지막 경고",
+      "에이, 같이 해요",
+      "꾹꾹이 해드릴게요",
+      "쓸래가 더 좋다냥",
+      "한 번만 써주세요",
     ]);
-    expect(NOPE_GONE_SAY.join(" ")).toBe("당신은 이 웹을 무조건 써야 합니다 ㅋ");
+    expect(NOPE_GONE_SAY).toEqual(["말래는 숨었다냥.", "쓸래로 같이 해봐요"]);
     // 환영 멘트: 여러 개, 말풍선 두 줄에 들어가게 덩어리당 짧게
     expect(WELCOME_SAYS.length).toBeGreaterThanOrEqual(6);
     for (const say of WELCOME_SAYS)
