@@ -5,28 +5,29 @@ import { Solo } from "./Solo.tsx";
 /** 도망칠 때마다 바뀌는 "말래" 버튼 문구. 다 쓰면 버튼이 펑 사라진다 (절대 안 눌린다). */
 export const NOPE_LABELS = [
   "말래…",
-  "에이, 같이 하자",
-  "잠깐만 써보자",
-  "쓸래가 더 좋아",
-  "한 번만 써줘",
+  "에이, 같이 해요",
+  "꾹꾹이 해드릴게요",
+  "쓸래가 더 좋다냥",
+  "한 번만 써주세요",
 ];
 /**
  * 처음 열면 쓸말이가 하는 말. 열 때마다 하나를 고른다. 고양이다운 하찮은 한마디로,
  * 덩어리마다 말풍선에서 한 줄로 묶는다.
  */
 export const WELCOME_SAYS: readonly (readonly string[])[] = [
-  ["귀 하나는 자신 있어.", "소리 잘 들을게"],
-  ["츄르 대신", "저음 줘"],
-  ["난 발바닥뿐이라", "줄 감는 건 부탁할게"],
-  ["줄 튕기면", "귀 쫑긋할게"],
-  ["낮은 소리 좋아해.", "골골송이랑 비슷하거든"],
-  ["귀 쫑긋!", "준비됐어 =^•ω•^="],
-  ["꼬리로", "박자 세는 중이었어"],
+  ["귀 하나는 자신 있어요.", "소리 잘 들을게요"],
+  ["츄르 대신", "저음 주세요냥"],
+  ["저는 발바닥뿐이라", "줄 감기는 부탁해요"],
+  ["줄 튕기시면", "귀 쫑긋할게요"],
+  ["낮은 소리 좋아해요.", "골골송이랑 비슷하거든요"],
+  ["귀 쫑긋!", "준비됐어요 =^•ω•^="],
+  ["꼬리로", "박자 세는 중이었어요"],
+  ["식빵 자세로", "얌전히 기다릴게요"],
 ];
-/** 자리 계산에 쓰는 말래 버튼 폭 (가장 긴 문구 "에이, 같이 하자" 기준, 여유 포함). */
+/** 자리 계산에 쓰는 말래 버튼 폭 (가장 긴 문구 "한 번만 써주세요" 기준, 여유 포함). */
 const NOPE_BOX_W = 190;
 /** 말래가 사라지면 쓸말이가 하는 말. 뒷부분은 말풍선에서 한 줄로 묶는다. */
-export const NOPE_GONE_SAY = ["말래는 숨었어.", "쓸래로 같이 해보자"] as const;
+export const NOPE_GONE_SAY = ["말래는 숨었다냥.", "쓸래로 같이 해봐요"] as const;
 
 /** 쫓을수록 약 오르는 쓸말이: 갸웃 → 까치발 → 사라지면 만세. (빠르게 떠는 포즈는 어지러워서 안 씀) */
 export function nopePose(dodges: number): Pose {
@@ -159,11 +160,11 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
       say={sayChunks(gone ? NOPE_GONE_SAY : welcome)}
     >
       <p>
-        오인페에 베이스 꽂았으면 <span class="nb">시작 눌러줘.</span>
+        오인페에 베이스 꽂으셨으면 <span class="nb">시작 눌러주세요.</span>
         <br />
-        브라우저가 입력 권한을 <span class="nb">물어볼 거야.</span>
+        브라우저가 입력 권한을 <span class="nb">물어볼 거예요.</span>
         <br />
-        소리는 이 브라우저 밖으로 <span class="nb">절대 안 나가.</span>
+        소리는 이 브라우저 밖으로 <span class="nb">절대 안 나가요.</span>
       </p>
       <div class="btns start-btns">
         <button
@@ -198,7 +199,7 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: () => v
         </button>
       </div>
       <p class="tiny">
-        로그인도 설치도 없어.
+        로그인도 설치도 없어요.
         <br />
         <span class="nb">Chrome · Edge · Safari · Firefox</span> <span class="nb">최신 버전</span>
       </p>

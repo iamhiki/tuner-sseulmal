@@ -42,9 +42,9 @@ let openSeq = 0;
 let lostId: string | null = null;
 
 const NOTICE: Partial<Record<AudioErrorKind, string>> = {
-  notFound: "입력 장치를 못 찾았어. 오인페가 꽂혀 있는지 봐줘.",
-  busy: "다른 앱이 이 장치를 쓰고 있나 봐. DAW나 통화 앱을 끄고 다시 골라줘.",
-  unknown: "장치를 못 열었어. 다른 장치를 골라보거나 새로고침해줘.",
+  notFound: "입력 장치를 못 찾았어요. 오인페가 꽂혀 있는지 봐주세요.",
+  busy: "다른 앱이 이 장치를 쓰고 있나 봐요. DAW나 통화 앱을 끄고 다시 골라주세요.",
+  unknown: "장치를 못 열었어요. 다른 장치를 골라보거나 새로고침해주세요.",
 };
 
 function fail(e: unknown): void {
@@ -117,7 +117,7 @@ export async function openDevice(deviceId?: string): Promise<boolean> {
       currentId.value = opened.deviceId;
       currentLabel.value = label;
       settings.value = trackSettings(track, engine.sampleRate);
-      if (opened.fellBack) notice.value = "고른 장치가 없어서 기본 입력으로 열었어.";
+      if (opened.fellBack) notice.value = "고른 장치가 없어서 기본 입력으로 열었어요.";
     });
     return true;
   } catch (e) {
@@ -163,7 +163,7 @@ export async function replug(): Promise<void> {
     lostId = null;
     screen.value = "tuner";
   } else if (screen.value === "unplugged") {
-    notice.value = "아직 안 보여. 케이블을 다시 꽂고 잠깐 기다려줘.";
+    notice.value = "아직 안 보여요. 케이블을 다시 꽂고 잠깐만 기다려주세요.";
   }
 }
 

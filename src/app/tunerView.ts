@@ -25,13 +25,13 @@ export interface TunerView {
 }
 
 const SAY: Record<Pose, string> = {
-  idle: "줄 하나 튕겨줘",
-  flat: "줄 좀 감아줘…",
-  sharp: "너무 팽팽해! 살짝 풀어줘",
-  intune: "딱 맞았다!",
-  sleep: "조용하네… 쿨쿨",
-  clip: "으악 너무 커! 게인 좀 줄여줘",
-  unsure: "음… 한 줄만 튕겨볼래?",
+  idle: "줄 하나 튕겨주세요. 귀 쫑긋!",
+  flat: "축 처졌다냥… 줄 좀 감아주세요",
+  sharp: "털 곤두섰어요! 살짝 풀어주세요",
+  intune: "딱 맞았다냥! 골골골",
+  sleep: "조용하네요… 식빵 굽는 중",
+  clip: "으악 귀 아파요! 게인 좀 줄여주세요",
+  unsure: "갸웃… 한 줄만 튕겨볼래요?",
 };
 
 /**
@@ -94,7 +94,7 @@ export function tunerView(
       say: SAY.unsure,
       blank: true,
       showCableHint: false,
-      centsLabel: "한 줄씩 또렷하게 튕겨줘",
+      centsLabel: "한 줄씩 또렷하게 튕겨주세요",
       waitWord: "불안정",
       tone: "dim",
     };
@@ -123,10 +123,10 @@ export function tunerView(
 }
 
 export const LEVEL_TEXT: Record<LevelState, string> = {
-  none: "아무 소리도 안 들어와",
-  low: "너무 작아, 게인 올려줘",
+  none: "아무 소리도 안 들어와요",
+  low: "너무 작아요, 게인 올려주세요",
   good: "적정해요",
-  clip: "너무 커! 게인 내려줘",
+  clip: "너무 커요! 게인 내려주세요",
 };
 
 /** 센트 표시: 부호는 진짜 마이너스(−)를 쓴다. */

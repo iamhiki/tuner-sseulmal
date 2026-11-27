@@ -25,10 +25,10 @@ export function DeviceSelector({
 }) {
   const noLabels = devices.length > 0 && devices.every((d) => !d.label);
   return (
-    <Solo pose="unsure" title="어디에 꽂았어?">
-      <p>줄을 하나 튕겨봐. 소리가 들어오는 장치 옆 막대가 움직여.</p>
+    <Solo pose="unsure" title="어디에 꽂으셨냥?">
+      <p>줄을 하나 튕겨보세요. 소리가 들어오는 장치 옆 막대가 움직여요.</p>
       {devices.length === 0 ? (
-        <p class="notice">입력 장치가 하나도 안 보여. 오인페를 꽂고 잠깐 기다려줘.</p>
+        <p class="notice">입력 장치가 하나도 안 보여요. 오인페를 꽂고 잠깐만 기다려주세요.</p>
       ) : (
         <ul class="devs">
           {devices.map((d, i) => {
@@ -62,13 +62,13 @@ export function DeviceSelector({
       )}
       <div class="btns">
         <button type="button" class="btn" onClick={onConfirm} disabled={!currentId || busy}>
-          이걸로 할래
+          이걸로 할래요
         </button>
       </div>
       <p class="tiny">
         {noLabels
-          ? "이름이 비어 보이면 권한을 아직 안 준 거야. 시작부터 다시 눌러줘."
-          : "막대는 지금 고른 장치만 움직여."}
+          ? "이름이 비어 보이면 아직 권한을 안 주신 거예요. 시작부터 다시 눌러주세요."
+          : "막대는 지금 고른 장치만 움직여요."}
       </p>
     </Solo>
   );
