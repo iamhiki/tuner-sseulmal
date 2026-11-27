@@ -54,7 +54,7 @@ describe("nextDodge (말래 버튼 도망)", () => {
       "쓸래가 더 좋다냥",
       "한 번만 써주세요",
     ]);
-    expect(NOPE_GONE_SAY.join(" ")).toBe("말래는 숨었다냥. 쓸래로 같이 해봐요");
+    expect(NOPE_GONE_SAY).toEqual(["말래는 숨었다냥.", "쓸래로 같이 해봐요"]);
     // 환영 멘트: 여러 개, 말풍선 두 줄에 들어가게 덩어리당 짧게
     expect(WELCOME_SAYS.length).toBeGreaterThanOrEqual(6);
     for (const say of WELCOME_SAYS)
